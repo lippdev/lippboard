@@ -1,0 +1,25 @@
+{
+  "name": "Lipp Board v0.1 · webOS",
+  "short_name": "Lipp Board",
+  "description": "Dashboard PWA pessoal e sistema operacional modular com suporte a Subagentes de IA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
