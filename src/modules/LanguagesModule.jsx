@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Languages, Flame, CheckCircle, Clock, BookOpen, Plus, Trophy } from 'lucide-react';
+import { Flame, CheckCircle, Clock, BookOpen, Plus } from 'lucide-react';
 import { saveStore } from '../services/store.js';
 
 export default function LanguagesModule({ state, setState }) {

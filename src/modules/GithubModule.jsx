@@ -5,51 +5,71 @@ import {
   Unlink, 
   ExternalLink, 
   GitBranch, 
-  CheckCircle, 
   Key, 
-  Lock,
-  Search,
-  Filter
+  Lock
 } from 'lucide-react';
 import { saveStore } from '../services/store.js';
+import { fetchUserPRs, fetchUserActivity } from '../services/githubService.js';
 
 export default function GithubModule({ state, setState }) {
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState('activity'); // Começa na atividade recente conforme preferência
   const [tokenInput, setTokenInput] = useState(state.user.githubToken || '');
   const [showTokenModal, setShowTokenModal] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const tabs = [
-    { id: 'all', label: 'Todos' },
-    { id: 'authored', label: 'De minha autoria' },
-    { id: 'review', label: 'Revisão solicitada' },
+    { id: 'activity', label: 'Atividades Recentes' },
+    { id: 'all', label: 'Todos os PRs' },
+    { id: 'authored', label: 'Meus PRs' },
+    { id: 'review', label: 'Revisão Solicitada' },
     { id: 'mentioned', label: 'Mencionados' },
-    { id: 'assigned', label: 'Atribuídos a você' },
-    { id: 'repos', label: 'Nos seus repositórios' },
+    { id: 'assigned', label: 'Atribuídos' },
+    { id: 'repos', label: 'Nos Repositórios' },
   ];
 
   const filteredPrs = state.github.prs.filter(pr => {
     if (activeTab === 'all') return true;
     if (activeTab === 'authored') return pr.type === 'authored';
+    if (activeTab === 'review') return pr.type === 'review';
     if (activeTab === 'mentioned') return pr.type === 'mentioned';
+    if (activeTab === 'assigned') return pr.type === 'assigned';
     if (activeTab === 'repos') return pr.type === 'repos';
     return true;
   });
 
-  const handleSync = () => {
+  const handleSync = async () => {
     setSyncing(true);
-    setTimeout(() => {
-      setSyncing(false);
+    setErrorMsg('');
+    try {
+      const handle = state.user.handle;
+      const token = state.user.githubToken;
+      
+      const [fetchedPrs, fetchedActivities] = await Promise.all([
+        fetchUserPRs(handle, token),
+        fetchUserActivity(handle, token)
+      ]);
+
       const updated = {
         ...state,
         user: {
           ...state.user,
           lastSynced: new Date().toLocaleString('pt-BR')
+        },
+        github: {
+          ...state.github,
+          prs: fetchedPrs,
+          activities: fetchedActivities
         }
       };
       setState(updated);
       saveStore(updated);
-    }, 1200);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg(err.message || 'Erro ao sincronizar com o GitHub. Verifique seu token.');
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const handleSaveToken = (e) => {
@@ -66,12 +86,37 @@ export default function GithubModule({ state, setState }) {
     setShowTokenModal(false);
   };
 
+  const handleDisconnect = () => {
+    if (window.confirm('Deseja desconectar seu token do GitHub e limpar PRs/atividades salvos?')) {
+      const updated = {
+        ...state,
+        user: {
+          ...state.user,
+          githubToken: ''
+        },
+        github: {
+          prs: [],
+          activities: []
+        }
+      };
+      setState(updated);
+      saveStore(updated);
+      setTokenInput('');
+    }
+  };
+
   return (
     <div>
       <div className="page-header">
         <h1 className="page-title">GitHub</h1>
-        <p className="page-subtitle">PRs de sua autoria, em revisão, mencionados ou de seus repositórios.</p>
+        <p className="page-subtitle">Sua atividade de commits, eventos e Pull Requests em tempo real.</p>
       </div>
+
+      {errorMsg && (
+        <div style={{ padding: '12px 16px', borderRadius: '8px', backgroundColor: 'var(--danger-bg)', color: 'var(--danger)', fontSize: '13px', marginBottom: '20px' }}>
+          ⚠️ {errorMsg}
+        </div>
+      )}
 
       {/* Account Sync Header Card */}
       <div className="card" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
@@ -99,7 +144,7 @@ export default function GithubModule({ state, setState }) {
               )}
             </div>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>
-              Última sincronização: {state.user.lastSynced}
+              Última sincronização: {state.user.lastSynced || 'Nunca sincronizado'}
             </p>
           </div>
         </div>
@@ -111,7 +156,7 @@ export default function GithubModule({ state, setState }) {
             title="Conectar repositórios privados"
           >
             <Key size={15} />
-            <span>{state.user.githubToken ? 'Alterar Token' : 'Conectar Repos Privados'}</span>
+            <span>{state.user.githubToken ? 'Alterar Token' : 'Conectar GitHub'}</span>
           </button>
 
           <button 
@@ -123,7 +168,12 @@ export default function GithubModule({ state, setState }) {
             <span>{syncing ? 'Sincronizando...' : 'Sincronizar agora'}</span>
           </button>
           
-          <button className="topbar-btn" style={{ color: 'var(--text-muted)' }}>
+          <button 
+            className="topbar-btn" 
+            style={{ color: 'var(--danger)', borderColor: 'rgba(239,68,68,0.2)' }}
+            onClick={handleDisconnect}
+            disabled={!state.user.githubToken}
+          >
             <Unlink size={15} />
             <span>Desconectar</span>
           </button>
@@ -154,9 +204,49 @@ export default function GithubModule({ state, setState }) {
         ))}
       </div>
 
-      {/* PR Cards List */}
+      {/* List content */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {filteredPrs.map(pr => (
+        {activeTab === 'activity' ? (
+          (!state.github.activities || state.github.activities.length === 0) ? (
+            <div className="card" style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              Nenhuma atividade recente carregada. Clique em <strong>Sincronizar agora</strong> para buscar eventos do GitHub.
+            </div>
+          ) : (
+            state.github.activities.map(act => (
+              <div 
+                key={act.id} 
+                className="card"
+                style={{
+                  padding: '16px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '16px'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                  <GitBranch size={18} color="var(--accent-primary)" style={{ marginTop: '3px', flexShrink: 0 }} />
+                  <div>
+                    <h4 style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>
+                      {act.description}
+                    </h4>
+                    {act.details && <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '4px' }}>{act.details}</p>}
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                      {act.repo} · {act.date}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )
+        ) : (
+          filteredPrs.length === 0 ? (
+            <div className="card" style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              Nenhum Pull Request nesta categoria.
+            </div>
+          ) : (
+            filteredPrs.map(pr => (
+
           <div 
             key={pr.id} 
             className="card"
@@ -211,7 +301,7 @@ export default function GithubModule({ state, setState }) {
               </a>
             </div>
           </div>
-        ))}
+        ))))}
       </div>
 
       {/* Modal para Inserção de Token Privado do GitHub */}

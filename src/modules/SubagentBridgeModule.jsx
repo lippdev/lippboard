@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Bot, Terminal, Download, Upload, CheckCircle, Copy, Sparkles } from 'lucide-react';
+import { Terminal, Download, CheckCircle, Copy, Sparkles } from 'lucide-react';
 import { processAgentCommand } from '../services/agentBridgeService.js';
-import { saveStore } from '../services/store.js';
 
 export default function SubagentBridgeModule({ state, setState }) {
   const [testCmd, setTestCmd] = useState('');

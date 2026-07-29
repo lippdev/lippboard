@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import SubagentCommandDrawer from './components/SubagentCommandDrawer';
+import LockScreen from './components/LockScreen';
 
 // Módulos
 import HomeModule from './modules/HomeModule';
@@ -29,13 +30,41 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isPwaInstalled, setIsPwaInstalled] = useState(false);
 
+  // Estado de bloqueio inicial do aplicativo baseada em sessão
+  const isSecurityConfigured = Boolean(state.security?.enabled && state.security?.pinHash);
+  const [isLocked, setIsLocked] = useState(() => {
+    if (!isSecurityConfigured) return false;
+    // Se a segurança está ativada, verifica se já foi autenticado nesta sessão do navegador
+    return sessionStorage.getItem('lippboard_session_auth') !== 'true';
+  });
+
   // Aplica tema ao atributo root
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    const updated = { ...state, theme };
-    setState(updated);
-    saveStore(updated);
+    setState(prev => {
+      if (prev.theme === theme) return prev;
+      const updated = { ...prev, theme };
+      saveStore(updated);
+      return updated;
+    });
   }, [theme]);
+
+  // Se o usuário ativar/desativar a segurança nas configurações, ajusta a sessão
+  useEffect(() => {
+    if (!state.security?.enabled || !state.security?.pinHash) {
+      setIsLocked(false);
+    }
+  }, [state.security]);
+
+  const handleUnlock = () => {
+    sessionStorage.setItem('lippboard_session_auth', 'true');
+    setIsLocked(false);
+  };
+
+  const handleLockApp = () => {
+    sessionStorage.removeItem('lippboard_session_auth');
+    setIsLocked(true);
+  };
 
   // Captura evento de instalação PWA
   useEffect(() => {
@@ -76,11 +105,11 @@ export default function App() {
       case 'thoughts':
         return <ThoughtsModule state={state} setState={setState} />;
       case 'calendar':
-        return <CalendarModule state={state} />;
+        return <CalendarModule state={state} setState={setState} />;
       case 'goals':
-        return <GoalsModule state={state} />;
+        return <GoalsModule state={state} setState={setState} />;
       case 'fileboard':
-        return <FileBoardModule />;
+        return <FileBoardModule state={state} setState={setState} />;
       case 'mood':
         return <MoodModule state={state} setState={setState} />;
       case 'agentbridge':
@@ -94,6 +123,15 @@ export default function App() {
 
   return (
     <div className="app-container">
+      {/* Tela de Bloqueio por PIN / Face ID (WebAuthn) */}
+      {isLocked && isSecurityConfigured && (
+        <LockScreen 
+          securityConfig={state.security}
+          userProfile={state.user}
+          onUnlock={handleUnlock}
+        />
+      )}
+
       <Sidebar 
         activeModule={activeModule}
         setActiveModule={setActiveModule}
@@ -112,6 +150,8 @@ export default function App() {
           onOpenDrawer={() => setDrawerOpen(true)}
           isPwaInstalled={isPwaInstalled}
           onInstallPwa={deferredPrompt ? handleInstallPwa : null}
+          isSecurityEnabled={state.security?.enabled}
+          onLockApp={handleLockApp}
         />
 
         <div className="app-content">
@@ -127,3 +167,4 @@ export default function App() {
     </div>
   );
 }
+

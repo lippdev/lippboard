@@ -245,7 +245,14 @@ const DEFAULT_STATE = {
   },
   subagentLogs: [
     { id: 'l1', timestamp: '28/07/2026, 19:42', agent: 'Antigravity Subagent', action: 'INICIALIZOU_APP', details: 'Configurado Lipp Board v0.1 para Filipe Moreira (@lippdev)', status: 'sucesso' }
-  ]
+  ],
+  security: {
+    enabled: false,
+    pinHash: '',
+    biometricsEnabled: false,
+    webAuthnCredentialId: null,
+    autoLockOnHide: false
+  }
 };
 
 export const getStore = () => {
@@ -255,7 +262,15 @@ export const getStore = () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_STATE));
       return DEFAULT_STATE;
     }
-    return JSON.parse(saved);
+    const parsed = JSON.parse(saved);
+    return {
+      ...DEFAULT_STATE,
+      ...parsed,
+      security: {
+        ...DEFAULT_STATE.security,
+        ...(parsed.security || {})
+      }
+    };
   } catch (err) {
     console.error('Erro ao ler estado do localStorage:', err);
     return DEFAULT_STATE;

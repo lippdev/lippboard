@@ -26,7 +26,7 @@ export default function Sidebar({ activeModule, setActiveModule, isOpen, setIsOp
     { id: 'calendar', label: 'Calendário', icon: Calendar, badge: state.calendar.length },
     { id: 'goals', label: 'Metas', icon: Target, badge: state.goals.length },
     { id: 'github', label: 'GitHub', icon: GitPullRequest, badge: state.github.prs.length },
-    { id: 'fileboard', label: 'Arquivos', icon: Folder, badge: 4 },
+    { id: 'fileboard', label: 'Arquivos', icon: Folder, badge: state.files?.length || 0 },
     { id: 'mood', label: 'Humor', icon: Smile, badge: `${state.mood.todayScore}/5` },
     { id: 'agentbridge', label: 'Ponte do Subagente', icon: Bot, badge: 'IA' },
   ];

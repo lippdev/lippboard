@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Smile, Heart, TrendingUp } from 'lucide-react';
 import { saveStore } from '../services/store.js';
 
 export default function MoodModule({ state, setState }) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Sun, Moon, Bot, Download, CheckCircle2 } from 'lucide-react';
+import { Sun, Moon, Bot, Download, Lock } from 'lucide-react';
 
-export default function Topbar({ activeModule, theme, setTheme, onOpenDrawer, isPwaInstalled, onInstallPwa }) {
+export default function Topbar({ activeModule, theme, setTheme, onOpenDrawer, isPwaInstalled, onInstallPwa, isSecurityEnabled, onLockApp }) {
   const [dateTimeStr, setDateTimeStr] = useState('');
 
   useEffect(() => {
@@ -48,6 +48,18 @@ export default function Topbar({ activeModule, theme, setTheme, onOpenDrawer, is
         <div className="topbar-clock">
           <span>{dateTimeStr}</span>
         </div>
+
+        {isSecurityEnabled && (
+          <button 
+            className="topbar-btn"
+            title="Bloquear aplicativo agora"
+            onClick={onLockApp}
+            style={{ color: 'var(--accent-primary)' }}
+          >
+            <Lock size={16} />
+            <span>Bloquear</span>
+          </button>
+        )}
 
         <button 
           className="topbar-btn" 

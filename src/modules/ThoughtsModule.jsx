@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lightbulb, Plus, Tag, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
 import { saveStore } from '../services/store.js';
 
 export default function ThoughtsModule({ state, setState }) {

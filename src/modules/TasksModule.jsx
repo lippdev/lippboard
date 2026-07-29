@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckSquare, Plus, CheckCircle, Trash2, Tag, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { saveStore } from '../services/store.js';
 
 export default function TasksModule({ state, setState }) {

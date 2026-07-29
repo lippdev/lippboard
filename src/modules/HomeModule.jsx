@@ -5,7 +5,6 @@ import {
   GitPullRequest, 
   Smile, 
   Bot, 
-  Sparkles,
   ArrowRight,
   Flame
 } from 'lucide-react';
