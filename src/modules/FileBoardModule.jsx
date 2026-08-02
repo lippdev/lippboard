@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FileText, ExternalLink, Plus, Trash2, Download, Upload } from 'lucide-react';
 import { getAllFiles, getFile, saveFile, deleteFile, formatBytes } from '../services/fileStorageService.js';
+import { saveStore } from '../services/store.js';
 
 export default function FileBoardModule({ state, setState }) {
   const files = state.files || [];
@@ -11,36 +12,16 @@ export default function FileBoardModule({ state, setState }) {
   const loadFiles = useCallback(async () => {
     try {
       const data = await getAllFiles();
-      if (data.length === 0 && (!state.files || state.files.length === 0)) {
-        // Mock inicial caso esteja vazio, para que o usuário não veja o painel em branco
-        const initialMock = [
-          { id: '1', name: 'Documentação do Lipp Board PWA', type: 'doc', size: '24 KB', date: '28/07/2026' },
-          { id: '2', name: 'Guia de Estudo de Idiomas - Anotações.md', type: 'markdown', size: '12 KB', date: '27/07/2026' },
-          { id: '3', name: 'Link: Repositório GitHub (lippdev/lippboard)', type: 'link', size: 'URL', date: '28/07/2026', url: 'https://github.com/lippdev/lippboard.git' }
-        ];
-        // Salva mock inicial no IndexedDB
-        for (const item of initialMock) {
-          await saveFile(item);
-        }
-        const updated = {
-          ...state,
-          files: initialMock
-        };
-        setState(updated);
-        saveStore(updated);
-      } else {
-        // Sincroniza metadados para o state local (localStorage) excluindo os dados binários (content)
-        const metadata = data.map(({ id, name, type, size, date, url }) => ({
-          id, name, type, size, date, url
-        }));
-        
-        const updated = {
-          ...state,
-          files: metadata
-        };
-        setState(updated);
-        saveStore(updated);
-      }
+      const metadata = data.map(({ id, name, type, size, date, url }) => ({
+        id, name, type, size, date, url
+      }));
+
+      const updated = {
+        ...state,
+        files: metadata
+      };
+      setState(updated);
+      saveStore(updated);
     } catch (err) {
       console.error('Erro ao ler arquivos do IndexedDB:', err);
     }
@@ -143,7 +124,7 @@ export default function FileBoardModule({ state, setState }) {
   };
 
   return (
-    <div>
+    <div className="module-page">
       <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 className="page-title">Arquivos & Links</h1>
@@ -170,7 +151,7 @@ export default function FileBoardModule({ state, setState }) {
       {showLinkForm && (
         <div className="card" style={{ marginBottom: '20px' }}>
           <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '12px' }}>Adicionar Link de Referência</h3>
-          <form onSubmit={handleAddLink} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '12px', alignItems: 'end' }}>
+          <form onSubmit={handleAddLink} className="module-form-grid module-form-grid--3">
             <div>
               <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Título / Nome do Link</label>
               <input 
@@ -215,7 +196,7 @@ export default function FileBoardModule({ state, setState }) {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+      <div className="module-panel-grid module-panel-grid--3">
         {files.map(f => (
           <div key={f.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '120px' }}>
             <div>

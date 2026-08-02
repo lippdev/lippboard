@@ -106,7 +106,7 @@ export default function GithubModule({ state, setState }) {
   };
 
   return (
-    <div>
+    <div className="module-page">
       <div className="page-header">
         <h1 className="page-title">GitHub</h1>
         <p className="page-subtitle">Sua atividade de commits, eventos e Pull Requests em tempo real.</p>
@@ -181,7 +181,7 @@ export default function GithubModule({ state, setState }) {
       </div>
 
       {/* Filter Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '4px' }}>
+      <div className="module-chip-row" style={{ marginBottom: '20px' }}>
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -205,7 +205,7 @@ export default function GithubModule({ state, setState }) {
       </div>
 
       {/* List content */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div className="module-list">
         {activeTab === 'activity' ? (
           (!state.github.activities || state.github.activities.length === 0) ? (
             <div className="card" style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>

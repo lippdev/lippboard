@@ -24,7 +24,7 @@ export default function MoodModule({ state, setState }) {
   };
 
   return (
-    <div>
+    <div className="module-page">
       <div className="page-header">
         <h1 className="page-title">Rastreador de Humor</h1>
         <p className="page-subtitle">Acompanhe seu bem-estar, nível de energia e reflexões diárias.</p>
@@ -33,7 +33,7 @@ export default function MoodModule({ state, setState }) {
       <div className="card" style={{ marginBottom: '24px' }}>
         <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Como você está se sentindo hoje?</h3>
         
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+        <div className="module-chip-row" style={{ marginBottom: '20px' }}>
           {[1, 2, 3, 4, 5].map(s => (
             <button
               key={s}
@@ -81,7 +81,7 @@ export default function MoodModule({ state, setState }) {
 
       <div className="card">
         <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Histórico de Humor</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div className="module-list">
           {state.mood.history.map((h, idx) => (
             <div key={idx} style={{ padding: '12px 14px', borderRadius: '8px', backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>

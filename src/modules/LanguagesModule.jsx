@@ -63,14 +63,14 @@ export default function LanguagesModule({ state, setState }) {
   };
 
   return (
-    <div>
+    <div className="module-page">
       <div className="page-header">
         <h1 className="page-title">Estudo de Idiomas</h1>
         <p className="page-subtitle">Acompanhe sua checklist diária de estudos, ofensiva (streak) e histórico de tópicos.</p>
       </div>
 
       {/* Grid Banner Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+      <div className="module-panel-grid module-panel-grid--3" style={{ marginBottom: '24px' }}>
         
         {/* Card 1: Checklist Diária */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -133,7 +133,7 @@ export default function LanguagesModule({ state, setState }) {
           <Plus size={18} color="var(--accent-primary)" />
           Registrar Sessão de Estudo
         </h3>
-        <form onSubmit={handleAddSession} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 140px auto', gap: '12px', alignItems: 'end' }}>
+        <form onSubmit={handleAddSession} className="module-form-grid module-form-grid--4">
           <div>
             <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>O que você estudou?</label>
             <input 
@@ -202,7 +202,7 @@ export default function LanguagesModule({ state, setState }) {
       {/* Histórico Recente de Estudos */}
       <div className="card">
         <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Histórico Recente</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div className="module-list">
           {state.languages.history.map((item, idx) => (
             <div 
               key={idx}

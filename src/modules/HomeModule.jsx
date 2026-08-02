@@ -14,7 +14,7 @@ export default function HomeModule({ state, setActiveModule, onOpenDrawer }) {
   const recentPrs = state.github.prs.slice(0, 4);
 
   return (
-    <div>
+    <div className="module-page">
       <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <h1 className="page-title">Olá, Filipe! 👋</h1>
@@ -27,7 +27,7 @@ export default function HomeModule({ state, setActiveModule, onOpenDrawer }) {
       </div>
 
       {/* Grid de Resumo */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+      <div className="module-panel-grid module-panel-grid--4" style={{ marginBottom: '24px' }}>
         
         {/* Card Idiomas */}
         <div className="card" onClick={() => setActiveModule('languages')} style={{ cursor: 'pointer' }}>
@@ -81,7 +81,7 @@ export default function HomeModule({ state, setActiveModule, onOpenDrawer }) {
       </div>
 
       {/* Layout em 2 Colunas: Tarefas & GitHub PRs Recentes */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
+      <div className="module-panel-grid module-panel-grid--2">
         
         {/* Lista de Tarefas do Dia */}
         <div className="card">

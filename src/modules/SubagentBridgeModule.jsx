@@ -36,14 +36,14 @@ export default function SubagentBridgeModule({ state, setState }) {
   };
 
   return (
-    <div>
+    <div className="module-page">
       <div className="page-header">
         <h1 className="page-title">Ponte do Subagente de IA</h1>
         <p className="page-subtitle">Protocolo de comunicação local para assistentes (Gemini, ChatGPT, Antigravity) sem chaves de API nem OAuth.</p>
       </div>
 
       {/* Grid de Operações */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+      <div className="module-panel-grid module-panel-grid--2" style={{ marginBottom: '24px' }}>
         
         {/* Card de Teste Direto */}
         <div className="card">
@@ -107,7 +107,7 @@ export default function SubagentBridgeModule({ state, setState }) {
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div className="module-list">
           {state.subagentLogs.map(log => (
             <div 
               key={log.id}

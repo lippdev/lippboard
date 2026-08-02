@@ -12,6 +12,20 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
   const [savedMsg, setSavedMsg] = useState('');
   const [profileMsg, setProfileMsg] = useState('');
 
+  const pageChecklist = [
+    ['Início', 'Layout ajustado'],
+    ['GitHub', 'Tabs e cards responsivos'],
+    ['Tarefas', 'Formulário mobile-first'],
+    ['Pensamentos', 'Cards em grid'],
+    ['Idiomas', 'Checklist e histórico'],
+    ['Calendário', 'Agenda e formulário'],
+    ['Metas', 'Progresso e ações'],
+    ['Arquivos', 'Links e uploads'],
+    ['Humor', 'Entrada simples'],
+    ['Ponte IA', 'Comandos e histórico'],
+    ['Configurações', 'Perfil, segurança e tema'],
+  ];
+
   // Segurança State
   const secConfig = state.security || { enabled: false, pinHash: '', biometricsEnabled: false, autoLockOnHide: true };
   const [pin, setPin] = useState('');
@@ -176,10 +190,25 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
   };
 
   return (
-    <div>
+    <div className="module-page">
       <div className="page-header">
         <h1 className="page-title">Configurações do Sistema</h1>
         <p className="page-subtitle">Personalize a aparência, perfil, segurança/biometria e tokens de acesso.</p>
+      </div>
+
+      <div className="card" style={{ marginBottom: '20px' }}>
+        <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <CheckCircle size={18} color="var(--accent-primary)" />
+          Checklist das páginas
+        </h3>
+        <div className="module-page-checklist">
+          {pageChecklist.map(([label, status]) => (
+            <div key={label} className="page-check-item">
+              <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>{label}</span>
+              <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: '700' }}>{status}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '700px' }}>
@@ -201,7 +230,7 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
           )}
 
           <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div className="module-form-grid module-form-grid--2">
               <div>
                 <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Nome Completo</label>
                 <input 
@@ -238,7 +267,7 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div className="module-form-grid module-form-grid--2">
               <div>
                 <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Email</label>
                 <input 
@@ -328,7 +357,7 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
               {secConfig.pinHash ? 'Alterar PIN de Segurança' : 'Cadastrar PIN de Segurança'}
             </h4>
             <form onSubmit={handleSetPin} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div className="module-form-grid module-form-grid--2">
                 <input 
                   type="password"
                   placeholder="Novo PIN (ex: 1234)"

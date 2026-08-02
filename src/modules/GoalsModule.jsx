@@ -54,7 +54,7 @@ export default function GoalsModule({ state, setState }) {
   };
 
   return (
-    <div>
+    <div className="module-page">
       <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 className="page-title">Metas & Objetivos</h1>
@@ -69,7 +69,7 @@ export default function GoalsModule({ state, setState }) {
       {showForm && (
         <div className="card" style={{ marginBottom: '20px' }}>
           <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '12px' }}>Criar Nova Meta</h3>
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px 100px 100px auto', gap: '12px', alignItems: 'end' }}>
+          <form onSubmit={handleSubmit} className="module-form-grid module-form-grid--6">
             <div>
               <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Título da Meta</label>
               <input 
@@ -169,7 +169,7 @@ export default function GoalsModule({ state, setState }) {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+      <div className="module-panel-grid module-panel-grid--3">
         {(!state.goals || state.goals.length === 0) ? (
           <div className="card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
             Nenhuma meta cadastrada.

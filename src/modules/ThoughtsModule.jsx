@@ -39,7 +39,7 @@ export default function ThoughtsModule({ state, setState }) {
   };
 
   return (
-    <div>
+    <div className="module-page">
       <div className="page-header">
         <h1 className="page-title">Pensamentos & Notas</h1>
         <p className="page-subtitle">Guarde ideias rápidas, anotações de estudo e insights capturados pelo assistente.</p>
@@ -51,8 +51,8 @@ export default function ThoughtsModule({ state, setState }) {
           <Plus size={18} color="var(--accent-primary)" />
           Criar Nova Anotação
         </h3>
-        <form onSubmit={handleAddThought} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px', gap: '12px' }}>
+        <form onSubmit={handleAddThought} className="module-list" style={{ gap: '12px' }}>
+          <div className="module-form-grid module-form-grid--2">
             <input 
               type="text" 
               placeholder="Título da anotação..."
@@ -108,7 +108,7 @@ export default function ThoughtsModule({ state, setState }) {
       </div>
 
       {/* Grid de Cards de Notas */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+      <div className="module-panel-grid module-panel-grid--3">
         {state.thoughts.map(th => (
           <div key={th.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>

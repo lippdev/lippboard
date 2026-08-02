@@ -53,7 +53,7 @@ export default function TasksModule({ state, setState }) {
   };
 
   return (
-    <div>
+    <div className="module-page">
       <div className="page-header">
         <h1 className="page-title">Tarefas</h1>
         <p className="page-subtitle">Gerencie suas pendências do dia a dia e atribuições executadas por subagentes.</p>
@@ -65,7 +65,7 @@ export default function TasksModule({ state, setState }) {
           <Plus size={18} color="var(--accent-primary)" />
           Criar Nova Tarefa
         </h3>
-        <form onSubmit={handleAddTask} style={{ display: 'grid', gridTemplateColumns: '1fr 140px 140px auto', gap: '12px', alignItems: 'end' }}>
+        <form onSubmit={handleAddTask} className="module-form-grid module-form-grid--4">
           <div>
             <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Título da Tarefa</label>
             <input 
@@ -138,7 +138,7 @@ export default function TasksModule({ state, setState }) {
       {/* Lista de Tarefas */}
       <div className="card">
         <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Minha Lista de Tarefas</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div className="module-list">
           {state.tasks.map(t => (
             <div 
               key={t.id}
