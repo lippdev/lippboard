@@ -1,22 +1,24 @@
 {
-  "name": "Lipp Board v0.1 · webOS",
+  "name": "Lipp Board · PWA pessoal",
   "short_name": "Lipp Board",
-  "description": "Dashboard PWA pessoal e sistema operacional modular com suporte a Subagentes de IA",
+  "description": "PWA pessoal de bolso com foco em iPhone e uso individual",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#090d16",
-  "theme_color": "#0f172a",
-  "orientation": "any",
+  "display_override": ["standalone"],
+  "background_color": "#0b0f19",
+  "theme_color": "#0b0f19",
+  "orientation": "portrait-primary",
   "lang": "pt-BR",
   "icons": [
     {
-      "src": "pwa-192x192.png",
+      "src": "/pwa-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "pwa-512x512.png",
+      "src": "/pwa-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

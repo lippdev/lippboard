@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
+import MobileDock from './components/MobileDock';
 import SubagentCommandDrawer from './components/SubagentCommandDrawer';
 import LockScreen from './components/LockScreen';
 
@@ -163,6 +164,13 @@ export default function App() {
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         onStateChange={(newState) => setState({ ...newState })}
+      />
+
+      <MobileDock
+        activeModule={activeModule}
+        setActiveModule={setActiveModule}
+        onOpenDrawer={() => setDrawerOpen(true)}
+        onOpenMenu={() => setSidebarOpen(true)}
       />
     </div>
   );
