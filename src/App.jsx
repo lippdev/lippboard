@@ -50,6 +50,11 @@ export default function App() {
     });
   }, [theme]);
 
+  useEffect(() => {
+    document.body.classList.toggle('sidebar-locked', sidebarOpen);
+    return () => document.body.classList.remove('sidebar-locked');
+  }, [sidebarOpen]);
+
   // Se o usuário ativar/desativar a segurança nas configurações, ajusta a sessão
   useEffect(() => {
     if (!state.security?.enabled || !state.security?.pinHash) {
@@ -142,6 +147,8 @@ export default function App() {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
       />
+
+      {sidebarOpen && <button className="sidebar-backdrop" aria-label="Fechar menu" onClick={() => setSidebarOpen(false)} />}
 
       <main className="app-main">
         <Topbar 

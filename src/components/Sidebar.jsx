@@ -15,7 +15,9 @@ import {
   Bot, 
   Settings,
   Search,
-  X
+  X,
+  ChevronLeft,
+  Sparkles
 } from 'lucide-react';
 
 export default function Sidebar({ activeModule, setActiveModule, isOpen, setIsOpen, state, searchQuery, setSearchQuery }) {
@@ -31,94 +33,72 @@ export default function Sidebar({ activeModule, setActiveModule, isOpen, setIsOp
     { id: 'agentbridge', label: 'Ponte do Subagente', icon: Bot, badge: 'IA' },
   ];
 
+  const navItem = (id, label, Icon, badge) => (
+    <button
+      key={id}
+      className={`nav-item ${activeModule === id ? 'active' : ''}`}
+      onClick={() => { setActiveModule(id); setIsOpen(false); }}
+    >
+      <Icon className="nav-item-icon" />
+      <span>{label}</span>
+      {badge !== undefined && <span className="nav-badge">{badge}</span>}
+    </button>
+  );
+
   return (
-    <aside className={`app-sidebar ${isOpen ? 'open' : ''}`}>
+    <aside className={`app-sidebar ${isOpen ? 'open' : ''}`} aria-hidden={!isOpen}>
       <div className="sidebar-header">
-        <div className="sidebar-logo-icon">L</div>
-        <div className="sidebar-brand-text">
-          <span>Lipp Board</span>
-          <span className="sidebar-version">v0.1 · webOS</span>
+        <div className="sidebar-header-main">
+          <div className="sidebar-logo-icon">L</div>
+          <div className="sidebar-brand-text">
+            <span>Lipp Board</span>
+            <span className="sidebar-version">v0.1 · webOS</span>
+          </div>
         </div>
-        {isOpen && (
-          <button 
-            className="mobile-menu-btn" 
-            style={{ marginLeft: 'auto' }} 
-            onClick={() => setIsOpen(false)}
-          >
-            <X size={20} />
-          </button>
-        )}
+
+        <button 
+          className="mobile-menu-btn" 
+          onClick={() => setIsOpen(false)}
+          aria-label="Fechar menu"
+        >
+          <ChevronLeft size={20} />
+        </button>
       </div>
 
       <div className="sidebar-search-box">
-        <div className="search-input-wrapper">
+        <div className="search-input-wrapper sidebar-search-wrapper">
           <Search className="search-icon" />
           <input 
             type="text" 
-            placeholder="Pesquisar..." 
+            placeholder="Pesquisar módulos, notas e tarefas"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
 
-      <div className="sidebar-nav-section">
-        <button 
-          className={`nav-item ${activeModule === 'home' ? 'active' : ''}`}
-          onClick={() => { setActiveModule('home'); setIsOpen(false); }}
-        >
-          <Home className="nav-item-icon" />
-          <span>Início</span>
-        </button>
-        <button 
-          className={`nav-item ${activeModule === 'inbox' ? 'active' : ''}`}
-          onClick={() => { setActiveModule('inbox'); setIsOpen(false); }}
-        >
-          <Inbox className="nav-item-icon" />
-          <span>Caixa de Entrada</span>
-        </button>
-        <button 
-          className={`nav-item ${activeModule === 'activity' ? 'active' : ''}`}
-          onClick={() => { setActiveModule('activity'); setIsOpen(false); }}
-        >
-          <Activity className="nav-item-icon" />
-          <span>Atividades</span>
-        </button>
-        <button 
-          className={`nav-item ${activeModule === 'tags' ? 'active' : ''}`}
-          onClick={() => { setActiveModule('tags'); setIsOpen(false); }}
-        >
-          <Tag className="nav-item-icon" />
-          <span>Tags</span>
-        </button>
-      </div>
+      <div className="sidebar-scroll">
+        <div className="sidebar-quick-actions">
+          {navItem('home', 'Início', Home)}
+          {navItem('inbox', 'Caixa de Entrada', Inbox)}
+          {navItem('activity', 'Atividades', Activity)}
+          {navItem('tags', 'Tags', Tag)}
+        </div>
 
-      <div className="sidebar-nav-section">
-        <div className="nav-section-title">MÓDULOS</div>
-        {modulesList.map((m) => {
-          const Icon = m.icon;
-          return (
-            <button
-              key={m.id}
-              className={`nav-item ${activeModule === m.id ? 'active' : ''}`}
-              onClick={() => { setActiveModule(m.id); setIsOpen(false); }}
-            >
-              <Icon className="nav-item-icon" />
-              <span>{m.label}</span>
-              <span className="nav-badge">{m.badge}</span>
-            </button>
-          );
-        })}
-      </div>
+        <div className="sidebar-nav-section">
+          <div className="nav-section-title">MÓDULOS</div>
+          {modulesList.map(({ id, label, icon: Icon, badge }) => navItem(id, label, Icon, badge))}
+        </div>
 
-      <div className="sidebar-footer">
-        <button 
-          className={`nav-item ${activeModule === 'settings' ? 'active' : ''}`}
-          onClick={() => { setActiveModule('settings'); setIsOpen(false); }}
-        >
-          <Settings className="nav-item-icon" />
-          <span>Configurações</span>
-        </button>
+        <div className="sidebar-footer">
+          <div className="sidebar-footer-card">
+            <div className="sidebar-footer-copy">
+              <Sparkles size={14} />
+              <span>Modo PWA / toque rápido</span>
+            </div>
+            {navItem('settings', 'Configurações', Settings)}
+          </div>
+        </div>
       </div>
     </aside>
   );
