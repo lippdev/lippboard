@@ -26,7 +26,7 @@ export default function SubagentBridgeModule({ state, setState }) {
   };
 
   const copyPromptTemplate = () => {
-    const template = `Você é um subagente assistente do sistema Lipp Board. Execute as seguintes tarefas adicionando-as à checklist de estudos e tarefas do dia do usuário Filipe Moreira (@lippdev):
+    const template = `Você é um subagente assistente do sistema Lipp Board. Execute as seguintes tarefas adicionando-as à checklist de estudos e tarefas do usuário:
 - Estudo de Idiomas: Confirmar checklist de estudo de Inglês por 30 minutos.
 - Tarefas: Adicionar a tarefa "Revisar PRs do repositório lippboard.git" com prioridade Alta.`;
 

@@ -1,16 +1,27 @@
 // File and Web Link Storage Service using IndexedDB
 
-const DB_NAME = 'lippboard_db';
+const DB_NAME = 'lippboard_db_v2';
+const LEGACY_DB_NAME = 'lippboard_db';
 const DB_VERSION = 1;
 const STORE_NAME = 'files';
 
 let dbInstance = null;
+let legacyCleanupDone = false;
 
 /**
  * Initialize IndexedDB and create stores if needed.
  */
 function initDB() {
   if (dbInstance) return Promise.resolve(dbInstance);
+
+  if (!legacyCleanupDone && typeof indexedDB !== 'undefined') {
+    legacyCleanupDone = true;
+    try {
+      indexedDB.deleteDatabase(LEGACY_DB_NAME);
+    } catch (err) {
+      console.warn('Could not delete legacy IndexedDB database:', err);
+    }
+  }
 
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);

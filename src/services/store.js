@@ -1,12 +1,13 @@
 // Lipp Board - Initial Data Store & Local Storage Service
-const STORAGE_KEY = 'lippboard_pwa_data_v1';
+const STORAGE_KEY = 'lippboard_pwa_data_v2';
+const LEGACY_STORAGE_KEYS = ['lippboard_pwa_data_v1'];
 
 const DEFAULT_STATE = {
   user: {
-    name: 'Filipe Moreira',
-    handle: 'lippdev',
-    email: 'xfilipepenna2@gmail.com',
-    avatar: 'https://github.com/lippdev.png',
+    name: '',
+    handle: '',
+    email: '',
+    avatar: '',
     githubToken: '',
     lastSynced: ''
   },
@@ -18,13 +19,9 @@ const DEFAULT_STATE = {
   languages: {
     currentStreak: 0,
     todayStudied: false,
-    targetMinutes: 45,
+    targetMinutes: 0,
     todayMinutes: 0,
-    languagesList: [
-      { id: 'en', name: 'Inglês', level: 'Avançado (C1)', active: true, progress: 88 },
-      { id: 'es', name: 'Espanhol', level: 'Intermediário (B1)', active: true, progress: 54 },
-      { id: 'jp', name: 'Japonês', level: 'Iniciante (N5)', active: false, progress: 18 }
-    ],
+    languagesList: [],
     history: []
   },
   tasks: [],
@@ -32,7 +29,7 @@ const DEFAULT_STATE = {
   goals: [],
   calendar: [],
   mood: {
-    todayScore: 3,
+    todayScore: 0,
     todayNote: '',
     history: []
   },
@@ -51,6 +48,7 @@ export const getStore = () => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) {
+      LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_STATE));
       return DEFAULT_STATE;
     }

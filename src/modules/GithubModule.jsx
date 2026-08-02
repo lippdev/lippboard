@@ -136,7 +136,7 @@ export default function GithubModule({ state, setState }) {
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '700' }}>GitHub · @{state.user.handle}</h3>
+              <h3 style={{ fontSize: '16px', fontWeight: '700' }}>GitHub {state.user.handle ? `@${state.user.handle}` : ''}</h3>
               {state.user.githubToken && (
                 <span style={{ fontSize: '11px', background: 'var(--success-bg)', color: 'var(--success)', padding: '2px 8px', borderRadius: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Lock size={10} /> Token Privado Ativo

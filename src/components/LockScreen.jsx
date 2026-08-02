@@ -101,18 +101,22 @@ export default function LockScreen({ securityConfig, userProfile, onUnlock }) {
         {/* Header do Perfil / App */}
         <div className="lockscreen-header">
           <div className="lockscreen-avatar-wrapper">
-            <img 
-              src={userProfile?.avatar || 'https://github.com/lippdev.png'} 
-              alt={userProfile?.name || 'Lipp Board User'} 
-              className="lockscreen-avatar"
-            />
+            {userProfile?.avatar ? (
+              <img 
+                src={userProfile.avatar} 
+                alt={userProfile?.name || 'Lipp Board User'} 
+                className="lockscreen-avatar"
+              />
+            ) : (
+              <div className="lockscreen-avatar lockscreen-avatar--empty" aria-hidden="true" />
+            )}
             <div className="lockscreen-shield-badge">
               <Lock size={14} color="#ffffff" />
             </div>
           </div>
           <h2 className="lockscreen-title">Lipp Board Bloqueado</h2>
           <p className="lockscreen-subtitle">
-            Olá, {userProfile?.name?.split(' ')[0] || 'Lipp'}! Insira seu PIN ou ative o Face ID para continuar.
+            {userProfile?.name ? `Olá, ${userProfile.name.split(' ')[0]}! ` : 'Olá! '}Insira seu PIN ou ative o Face ID para continuar.
           </p>
         </div>
 

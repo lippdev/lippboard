@@ -17,7 +17,7 @@ export default function HomeModule({ state, setActiveModule, onOpenDrawer }) {
     <div className="module-page">
       <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 className="page-title">Olá, Filipe! 👋</h1>
+          <h1 className="page-title">{state.user.name ? `Olá, ${state.user.name}! 👋` : 'Olá! 👋'}</h1>
           <p className="page-subtitle">Bem-vindo ao seu Lipp Board webOS. Aqui está o resumo do seu dia.</p>
         </div>
         <button className="topbar-btn btn-primary" onClick={onOpenDrawer}>

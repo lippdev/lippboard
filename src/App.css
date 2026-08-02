@@ -254,6 +254,12 @@
   box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
 }
 
+.lockscreen-avatar--empty {
+  background: linear-gradient(180deg, rgba(207, 213, 223, 0.18), rgba(148, 163, 184, 0.08));
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
 .lockscreen-shield-badge {
   position: absolute;
   bottom: 2px;
