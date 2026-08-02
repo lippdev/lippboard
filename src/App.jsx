@@ -177,7 +177,7 @@ export default function App() {
         activeModule={activeModule}
         setActiveModule={setActiveModule}
         onOpenDrawer={() => setDrawerOpen(true)}
-        onOpenMenu={() => setSidebarOpen(true)}
+        onOpenMenu={() => setSidebarOpen(prev => !prev)}
       />
     </div>
   );

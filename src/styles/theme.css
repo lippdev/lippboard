@@ -84,12 +84,19 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html,
+body,
+#root {
+  overflow-x: clip;
+  min-height: 100vh;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.5;
-  overflow-x: hidden;
+  overflow-x: clip;
   min-height: 100vh;
 }
 
@@ -99,12 +106,17 @@ button, input, textarea, select {
   color: inherit;
 }
 
+img, svg, canvas, video, iframe {
+  max-width: 100%;
+}
+
 /* App Shell Grid Layout */
 .app-container {
   display: flex;
   min-height: 100vh;
-  width: 100vw;
+  width: 100%;
   overflow: hidden;
+  overflow-x: clip;
 }
 
 /* Sidebar Styles */
@@ -117,6 +129,7 @@ button, input, textarea, select {
   flex-shrink: 0;
   transition: transform 220ms ease, box-shadow 220ms ease, background-color 220ms ease;
   z-index: 20;
+  min-width: 0;
 }
 
 .sidebar-header-main {
@@ -235,9 +248,29 @@ button, input, textarea, select {
   border: none;
   background: transparent;
   width: 100%;
+  min-width: 0;
   text-align: left;
   transition: all 0.15s ease;
   user-select: none;
+}
+
+.nav-item span {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-badge {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background-color: var(--bg-input);
+  color: var(--text-muted);
 }
 
 .nav-item:hover {
@@ -255,16 +288,6 @@ button, input, textarea, select {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-}
-
-.nav-badge {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 7px;
-  border-radius: var(--radius-full);
-  background-color: var(--bg-input);
-  color: var(--text-muted);
 }
 
 .nav-item.active .nav-badge {
