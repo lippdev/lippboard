@@ -33,7 +33,7 @@ export default function App() {
 
   // Estado de bloqueio inicial do aplicativo baseada em sessão
   const isSecurityConfigured = Boolean(state.security?.enabled && (state.security?.passwordHash || state.security?.pinHash));
-  const [isLocked, setIsLocked] = useState(() => Boolean(state.security?.enabled && state.security?.passwordHash));
+  const [isLocked, setIsLocked] = useState(true);
 
   // Aplica tema ao atributo root
   useEffect(() => {
@@ -51,13 +51,21 @@ export default function App() {
     return () => document.body.classList.remove('sidebar-locked');
   }, [sidebarOpen]);
 
-  // Se o usuário desativar a segurança, desbloqueia; se ativar, volta a exigir autenticação
-  useEffect(() => {
-    const securityEnabled = Boolean(state.security?.enabled && (state.security?.passwordHash || state.security?.pinHash));
-    setIsLocked(securityEnabled);
-  }, [state.security?.enabled, state.security?.passwordHash, state.security?.pinHash]);
 
   const handleUnlock = () => {
+    setIsLocked(false);
+  };
+
+  const handleSetupSecurity = (security) => {
+    const updated = {
+      ...state,
+      security: {
+        ...state.security,
+        ...security,
+      },
+    };
+    setState(updated);
+    saveStore(updated);
     setIsLocked(false);
   };
 
@@ -133,11 +141,13 @@ export default function App() {
   return (
     <div className="app-container">
       {/* Tela de Bloqueio por senha / Face ID (WebAuthn) */}
-      {isLocked && isSecurityConfigured && (
+      {isLocked && (
         <LockScreen 
           securityConfig={state.security}
           userProfile={state.user}
+          mode={isSecurityConfigured ? 'unlock' : 'setup'}
           onUnlock={handleUnlock}
+          onSetupSecurity={handleSetupSecurity}
         />
       )}
 

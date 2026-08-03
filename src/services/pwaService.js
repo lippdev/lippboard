@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-08-03-3';
+const APP_VERSION = '2026-08-03-4';
 const APP_CACHE_PREFIX = 'lippboard-shell-';
 const APP_BUILD_KEY = 'lippboard_app_version';
 
@@ -20,7 +20,6 @@ export async function clearPwaCache({ reload = false } = {}) {
       );
     }
 
-    localStorage.removeItem(APP_BUILD_KEY);
     sessionStorage.removeItem('lippboard_session_auth');
 
     if (reload) {
