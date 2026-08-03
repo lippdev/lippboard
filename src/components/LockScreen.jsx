@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowRight, BadgeCheck, Eye, EyeOff, KeyRound, LogIn, Lock, Sparkles, UserPlus } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Eye, EyeOff, KeyRound, LogIn, Lock, Sparkles, ShieldCheck } from 'lucide-react';
 
 export default function LockScreen({
   mode = 'login',
@@ -7,7 +7,6 @@ export default function LockScreen({
   errorMessage = '',
   onLogin,
   onSetup,
-  onSwitchMode,
 }) {
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -88,8 +87,25 @@ export default function LockScreen({
             </div>
           </div>
 
+          <div className="auth-pill-row">
+            <span className="auth-pill"><ShieldCheck size={12} /> Login seguro</span>
+            <span className="auth-pill"><KeyRound size={12} /> Banco SQLite</span>
+            <span className="auth-pill"><Sparkles size={12} /> PWA de produção</span>
+          </div>
+
           <h1 className="lockscreen-title auth-title">{headline}</h1>
           <p className="lockscreen-subtitle auth-subtitle">{helperText}</p>
+
+          <div className="auth-summary">
+            <div>
+              <span className="auth-summary-label">Modo</span>
+              <strong>{isSetupMode ? 'Primeiro acesso' : 'Login normal'}</strong>
+            </div>
+            <div>
+              <span className="auth-summary-label">Segurança</span>
+              <strong>Senha + sessão no servidor</strong>
+            </div>
+          </div>
         </div>
 
         <form className="lockscreen-password-form auth-form" onSubmit={handleSubmit}>
@@ -177,16 +193,9 @@ export default function LockScreen({
           </div>
         )}
 
-        {onSwitchMode && !isSetupMode && (
-          <button type="button" className="topbar-btn lockscreen-fallback-btn auth-switch" onClick={onSwitchMode}>
-            <UserPlus size={16} />
-            <span>Criar novo acesso</span>
-          </button>
-        )}
-
         <div className="lockscreen-footer">
           <Sparkles size={13} color="var(--text-muted)" />
-          <span>Login + banco SQLite + modo PWA</span>
+          <span>Login comum, banco SQLite e sessão segura</span>
         </div>
       </div>
     </div>

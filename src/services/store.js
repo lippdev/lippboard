@@ -5,6 +5,13 @@ import { saveRemoteState, fetchRemoteState } from './backendService.js';
 const STORAGE_KEY = 'lippboard_pwa_data_v4';
 const LEGACY_STORAGE_KEYS = ['lippboard_pwa_data_v1', 'lippboard_pwa_data_v2', 'lippboard_pwa_data_v3'];
 
+
+const stripDeprecatedFields = (state) => {
+  const { security, ...rest } = state || {};
+  return rest;
+};
+
+
 export const getStore = () => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY) || LEGACY_STORAGE_KEYS.map((key) => localStorage.getItem(key)).find(Boolean);
@@ -27,7 +34,7 @@ export const getStore = () => {
       enabled: Boolean(legacySecurity.enabled && (legacySecurity.passwordHash || legacySecurity.pinHash)),
     };
 
-    return {
+    return stripDeprecatedFields({
       ...createDefaultState(),
       ...parsed,
       security: migratedSecurity,
@@ -52,7 +59,7 @@ export const getStore = () => {
       calendar: Array.isArray(parsed.calendar) ? parsed.calendar : createDefaultState().calendar,
       files: Array.isArray(parsed.files) ? parsed.files : createDefaultState().files,
       subagentLogs: Array.isArray(parsed.subagentLogs) ? parsed.subagentLogs : createDefaultState().subagentLogs
-    };
+    });
   } catch (err) {
     console.error('Erro ao ler estado do localStorage:', err);
     return createDefaultState();
@@ -61,8 +68,9 @@ export const getStore = () => {
 
 export const saveStore = (state) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    void saveRemoteState(state);
+    const sanitized = stripDeprecatedFields(state);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+    void saveRemoteState(sanitized);
   } catch (err) {
     console.error('Erro ao salvar estado no localStorage:', err);
   }

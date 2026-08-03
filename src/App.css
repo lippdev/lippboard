@@ -456,7 +456,7 @@
 
 
 /* ==========================================================================
-   Auth/Login Styles
+   Auth/Login & Production Access Styles
    ========================================================================== */
 .auth-overlay {
   padding: 24px;
@@ -529,4 +529,70 @@
 .auth-error {
   width: 100%;
   justify-content: center;
+}
+
+
+.auth-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.auth-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+  background: color-mix(in srgb, var(--bg-elevated) 78%, transparent);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.auth-summary {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 6px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 84%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg-elevated) 90%, transparent), color-mix(in srgb, var(--bg-secondary) 92%, transparent));
+}
+
+.auth-summary strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.auth-summary-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.settings-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.settings-input::placeholder {
+  color: var(--text-muted);
+}
+
+.settings-input--grow {
+  flex: 1;
 }

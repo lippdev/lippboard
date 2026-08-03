@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Sun, Moon, Download, Key, RefreshCw, CheckCircle, Shield, User, Lock, Scan, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sun, Moon, Download, Key, RefreshCw, CheckCircle, User, Lock, Shield } from 'lucide-react';
 import { saveStore, clearStore } from '../services/store.js';
 import { clearPwaCache } from '../services/pwaService.js';
-import { resetRemoteState } from '../services/backendService.js';
-import { createPasswordRecord, isWebAuthnAvailable, isPlatformAuthenticatorAvailable, registerBiometrics, authenticateBiometrics } from '../services/securityService.js';
+import { changePassword, resetRemoteState } from '../services/backendService.js';
 
 export default function SettingsModule({ state, setState, theme, setTheme, isPwaInstalled, onInstallPwa }) {
   const [token, setToken] = useState(state.user.githubToken || '');
@@ -13,6 +12,15 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
   const [avatar, setAvatar] = useState(state.user.avatar || '');
   const [savedMsg, setSavedMsg] = useState('');
   const [profileMsg, setProfileMsg] = useState('');
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordMsg, setPasswordMsg] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const activeName = state.auth?.displayName || state.user.name || 'Administrador';
+  const activeHandle = state.auth?.username || state.user.handle || '—';
 
   const pageChecklist = [
     ['Início', 'Layout ajustado'],
@@ -25,21 +33,8 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
     ['Arquivos', 'Links e uploads'],
     ['Humor', 'Entrada simples'],
     ['Ponte IA', 'Comandos e histórico'],
-    ['Configurações', 'Perfil, segurança e tema'],
+    ['Configurações', 'Perfil, acesso e tema'],
   ];
-
-  // Segurança State
-  const secConfig = state.security || { enabled: false, passwordHash: '', passwordSalt: '', biometricsEnabled: false, autoLockOnHide: true };
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [secMsg, setSecMsg] = useState('');
-  const [secError, setSecError] = useState('');
-  const [_hasPlatformBio, setHasPlatformBio] = useState(false);
-  const [isRegisteringBio, setIsRegisteringBio] = useState(false);
-
-  useEffect(() => {
-    isPlatformAuthenticatorAvailable().then(avail => setHasPlatformBio(avail));
-  }, []);
 
   const handleSaveToken = (e) => {
     e.preventDefault();
@@ -47,8 +42,8 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
       ...state,
       user: {
         ...state.user,
-        githubToken: token
-      }
+        githubToken: token,
+      },
     };
     setState(updated);
     saveStore(updated);
@@ -65,8 +60,8 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
         name,
         handle,
         email,
-        avatar
-      }
+        avatar,
+      },
     };
     setState(updated);
     saveStore(updated);
@@ -74,114 +69,30 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
     setTimeout(() => setProfileMsg(''), 3000);
   };
 
-  const handleSetPassword = async (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
-    setSecMsg('');
-    setSecError('');
+    setPasswordMsg('');
+    setPasswordError('');
 
-    if (!password || password.length < 8) {
-      setSecError('A senha de segurança deve ter pelo menos 8 caracteres.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setSecError('A senha e a confirmação não conferem.');
+    if (!currentPassword || !newPassword || newPassword.length < 8) {
+      setPasswordError('Informe a senha atual e uma nova senha com pelo menos 8 caracteres.');
       return;
     }
 
-    const { hash, salt } = await createPasswordRecord(password);
-    const updated = {
-      ...state,
-      security: {
-        ...secConfig,
-        enabled: true,
-        passwordHash: hash,
-        passwordSalt: salt
-      }
-    };
-    setState(updated);
-    saveStore(updated);
-    setPassword('');
-    setConfirmPassword('');
-    setSecMsg('Senha de segurança salva com sucesso e proteção ativada!');
-    setTimeout(() => setSecMsg(''), 4000);
-  };
-
-  const handleToggleSecurity = (enabled) => {
-    if (enabled && !secConfig.passwordHash) {
-      setSecError('Cadastre uma senha antes de ativar a proteção.');
+    if (newPassword !== confirmPassword) {
+      setPasswordError('A nova senha e a confirmação não conferem.');
       return;
     }
-    const updated = {
-      ...state,
-      security: {
-        ...secConfig,
-        enabled
-      }
-    };
-    setState(updated);
-    saveStore(updated);
-    setSecMsg(enabled ? 'Proteção do app ativada!' : 'Proteção do app desativada.');
-    setTimeout(() => setSecMsg(''), 3000);
-  };
-
-  const handleToggleAutoLock = () => {
-    const updated = {
-      ...state,
-      security: {
-        ...secConfig,
-        autoLockOnHide: !secConfig.autoLockOnHide
-      }
-    };
-    setState(updated);
-    saveStore(updated);
-  };
-
-  const handleRegisterBiometrics = async () => {
-    setSecMsg('');
-    setSecError('');
-    setIsRegisteringBio(true);
 
     try {
-      const credentialId = await registerBiometrics(state.user.handle, state.user.name);
-      const updated = {
-        ...state,
-        security: {
-          ...secConfig,
-          biometricsEnabled: true,
-          webAuthnCredentialId: credentialId
-        }
-      };
-      setState(updated);
-      saveStore(updated);
-      setSecMsg('Face ID / Biometria cadastrada com sucesso!');
+      await changePassword({ currentPassword, newPassword });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordMsg('Senha alterada com sucesso.');
+      setTimeout(() => setPasswordMsg(''), 3500);
     } catch (err) {
-      console.error(err);
-      setSecError('Não foi possível registrar a biometria do dispositivo.');
-    } finally {
-      setIsRegisteringBio(false);
-      setTimeout(() => {
-        setSecMsg('');
-        setSecError('');
-      }, 4000);
-    }
-  };
-
-  const handleTestBiometrics = async () => {
-    setSecMsg('');
-    setSecError('');
-    try {
-      const ok = await authenticateBiometrics(secConfig.webAuthnCredentialId);
-      if (ok) {
-        setSecMsg('Biometria / Face ID autenticado com sucesso!');
-      }
-    } catch (err) {
-      console.warn('Erro no teste de biometria:', err);
-      setSecError('Falha no teste de biometria. Verifique se o Face ID está configurado.');
-    } finally {
-      setTimeout(() => {
-        setSecMsg('');
-        setSecError('');
-      }, 4000);
+      setPasswordError(err.message || 'Não foi possível alterar a senha.');
     }
   };
 
@@ -197,7 +108,7 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
     <div className="module-page">
       <div className="page-header">
         <h1 className="page-title">Configurações do Sistema</h1>
-        <p className="page-subtitle">Personalize a aparência, perfil, segurança/biometria e tokens de acesso.</p>
+        <p className="page-subtitle">Perfil, acesso, aparência e manutenção do Lipp Board em um só lugar.</p>
       </div>
 
       <div className="card" style={{ marginBottom: '20px' }}>
@@ -216,16 +127,25 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '700px' }}>
-        
-        {/* Card 1: Perfil do Usuário */}
         <div className="card">
           <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <User size={18} color="var(--accent-primary)" />
-            Perfil do Usuário
+            Perfil principal
           </h3>
           <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px' }}>
-            Personalize seu nome de exibição, handle do GitHub e informações de contato no Lipp Board.
+            Ajuste os dados exibidos no painel. O acesso do app continua separado e protegido pelo backend.
           </p>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px', padding: '14px', borderRadius: '16px', background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '16px', display: 'grid', placeItems: 'center', background: 'linear-gradient(180deg, rgba(59,130,246,.24), rgba(15,23,42,.96))', color: 'white', fontWeight: 800, fontSize: '18px' }}>
+              {(activeName || 'L').charAt(0).toUpperCase()}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{activeName}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>@{activeHandle}</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Conta principal do Lipp Board</div>
+            </div>
+          </div>
 
           {profileMsg && (
             <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--success-bg)', color: 'var(--success)', fontSize: '12.5px', marginBottom: '12px' }}>
@@ -236,247 +156,78 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
           <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div className="module-form-grid module-form-grid--2">
               <div>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Nome Completo</label>
-                <input 
-                  type="text" 
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--bg-input)',
-                    border: '1px solid var(--border-color)',
-                    fontSize: '13px',
-                    color: 'var(--text-primary)'
-                  }}
-                />
+                <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Nome completo</label>
+                <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="settings-input" />
               </div>
               <div>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>GitHub Username (Handle)</label>
-                <input 
-                  type="text" 
-                  value={handle} 
-                  onChange={(e) => setHandle(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--bg-input)',
-                    border: '1px solid var(--border-color)',
-                    fontSize: '13px',
-                    color: 'var(--text-primary)'
-                  }}
-                />
+                <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Handle público</label>
+                <input type="text" value={handle} onChange={(e) => setHandle(e.target.value)} className="settings-input" />
               </div>
             </div>
 
             <div className="module-form-grid module-form-grid--2">
               <div>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Email</label>
-                <input 
-                  type="email" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--bg-input)',
-                    border: '1px solid var(--border-color)',
-                    fontSize: '13px',
-                    color: 'var(--text-primary)'
-                  }}
-                />
+                <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>E-mail</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="settings-input" />
               </div>
               <div>
-                <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>URL do Avatar</label>
-                <input 
-                  type="text" 
-                  value={avatar} 
-                  onChange={(e) => setAvatar(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '9px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--bg-input)',
-                    border: '1px solid var(--border-color)',
-                    fontSize: '13px',
-                    color: 'var(--text-primary)'
-                  }}
-                />
+                <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Avatar</label>
+                <input type="url" value={avatar} onChange={(e) => setAvatar(e.target.value)} className="settings-input" placeholder="https://..." />
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-              <button type="submit" className="topbar-btn btn-primary" style={{ padding: '8px 20px' }}>
-                Salvar Perfil
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="submit" className="topbar-btn btn-primary">Salvar perfil</button>
             </div>
           </form>
         </div>
 
-        {/* Card Nova: Segurança, senha e Face ID / WebAuthn */}
         <div className="card">
           <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Lock size={18} color="var(--accent-primary)" />
-            Bloqueio local opcional
+            Acesso e senha
           </h3>
           <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px' }}>
-            O login principal agora usa banco SQLite. Esta área só controla um bloqueio local opcional neste dispositivo.
+            Troque a senha do login sem mexer nos dados do app.
           </p>
 
-          {secMsg && (
+          {passwordMsg && (
             <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--success-bg)', color: 'var(--success)', fontSize: '12.5px', marginBottom: '12px' }}>
-              {secMsg}
+              {passwordMsg}
             </div>
           )}
-
-          {secError && (
+          {passwordError && (
             <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontSize: '12.5px', marginBottom: '12px' }}>
-              {secError}
+              {passwordError}
             </div>
           )}
 
-          {/* Toggle de Ativar Segurança */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--border-color)' }}>
-            <div>
-              <h4 style={{ fontSize: '14px', fontWeight: '600' }}>Bloqueio local do dispositivo</h4>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                {secConfig.enabled ? 'O bloqueio local está ativo neste aparelho.' : 'Ative apenas se você quiser pedir senha/biometria ao abrir neste dispositivo.'}
-              </p>
+          <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="module-form-grid module-form-grid--3">
+              <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Senha atual" className="settings-input" />
+              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Nova senha" className="settings-input" />
+              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirmar nova senha" className="settings-input" />
             </div>
-            <button 
-              className={`topbar-btn ${secConfig.enabled ? 'btn-primary' : ''}`}
-              onClick={() => handleToggleSecurity(!secConfig.enabled)}
-            >
-              {secConfig.enabled ? <Lock size={16} /> : <Shield size={16} />}
-              <span>{secConfig.enabled ? 'Proteção Ativada' : 'Ativar Proteção'}</span>
-            </button>
-          </div>
-
-          {/* Form de Definição de senha */}
-          <div style={{ padding: '14px 0', borderBottom: '1px solid var(--border-color)' }}>
-            <h4 style={{ fontSize: '13.5px', fontWeight: '600', marginBottom: '8px' }}>
-              {secConfig.passwordHash ? 'Alterar senha local' : 'Cadastrar senha local'}
-            </h4>
-            <form onSubmit={handleSetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div className="module-form-grid module-form-grid--2">
-                <input 
-                  type="password"
-                  placeholder="Nova senha"
-                  maxLength={64}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  style={{
-                    padding: '9px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--bg-input)',
-                    border: '1px solid var(--border-color)',
-                    fontSize: '13px',
-                    color: 'var(--text-primary)'
-                  }}
-                />
-                <input 
-                  type="password"
-                  placeholder="Confirmar senha"
-                  maxLength={64}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  style={{
-                    padding: '9px 12px',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--bg-input)',
-                    border: '1px solid var(--border-color)',
-                    fontSize: '13px',
-                    color: 'var(--text-primary)'
-                  }}
-                />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button type="submit" className="topbar-btn">
-                  Salvar senha local
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Autenticação Biométrica / Face ID */}
-          <div style={{ padding: '14px 0', borderBottom: '1px solid var(--border-color)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <div>
-                <h4 style={{ fontSize: '13.5px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Scan size={16} color="var(--accent-primary)" />
-                  Face ID / Biometria local (WebAuthn)
-                </h4>
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  {secConfig.biometricsEnabled 
-                    ? 'Biometria registrada neste dispositivo.' 
-                    : isWebAuthnAvailable() 
-                      ? 'Cadastre a biometria nativa para desbloqueio local neste aparelho.'
-                      : 'WebAuthn não está disponível no contexto atual (requer HTTPS na VPS).'}
-                </p>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="submit" className="topbar-btn btn-primary">Atualizar senha</button>
             </div>
-
-            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-              <button 
-                type="button"
-                className="topbar-btn btn-primary"
-                onClick={handleRegisterBiometrics}
-                disabled={isRegisteringBio || !isWebAuthnAvailable()}
-              >
-                <Scan size={16} />
-                <span>{secConfig.biometricsEnabled ? 'Recadastrar Face ID' : 'Cadastrar Face ID'}</span>
-              </button>
-
-              {secConfig.biometricsEnabled && (
-                <button 
-                  type="button"
-                  className="topbar-btn"
-                  onClick={handleTestBiometrics}
-                >
-                  <Check size={16} />
-                  <span>Testar Biometria</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Auto Lock on Hide */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px' }}>
-            <div>
-              <h4 style={{ fontSize: '13.5px', fontWeight: '600' }}>Bloquear ao Minimizar / Trocar de Aba</h4>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Travar o Lipp Board automaticamente quando a tela perder o foco.</p>
-            </div>
-            <button 
-              className={`topbar-btn ${secConfig.autoLockOnHide ? 'btn-primary' : ''}`}
-              onClick={handleToggleAutoLock}
-            >
-              <span>{secConfig.autoLockOnHide ? 'Sim' : 'Não'}</span>
-            </button>
-          </div>
-
+          </form>
         </div>
-        
-        {/* Card 3: Tema & PWA */}
+
         <div className="card">
           <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Sun size={18} color="var(--accent-primary)" />
-            Aparência & PWA (Aplicativo Instalável)
+            Aparência & PWA
           </h3>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--border-color)' }}>
             <div>
-              <h4 style={{ fontSize: '14px', fontWeight: '600' }}>Tema da Interface</h4>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Alterne entre os modos Escuro e Claro.</p>
+              <h4 style={{ fontSize: '14px', fontWeight: '600' }}>Tema da interface</h4>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Alterne entre os modos escuro e claro.</p>
             </div>
-            <button 
-              className="topbar-btn"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            >
+            <button className="topbar-btn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
               {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-              <span>{theme === 'dark' ? 'Modo Escuro' : 'Modo Claro'}</span>
+              <span>{theme === 'dark' ? 'Modo escuro' : 'Modo claro'}</span>
             </button>
           </div>
 
@@ -487,7 +238,7 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
             </div>
             {isPwaInstalled ? (
               <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <CheckCircle size={16} /> PWA Instalado
+                <CheckCircle size={16} /> PWA instalado
               </span>
             ) : (
               <button className="topbar-btn btn-primary" onClick={onInstallPwa}>
@@ -498,14 +249,13 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
           </div>
         </div>
 
-        {/* Card 4: GitHub Personal Access Token */}
         <div className="card">
           <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Key size={18} color="var(--warning)" />
-            Conexão GitHub Privado
+            Conexão GitHub privada
           </h3>
           <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px' }}>
-            Opcional: insira seu <em>Personal Access Token (PAT)</em> para que o Lipp Board carregue repositórios, commits e PRs diretamente.
+            Opcional: insira seu Personal Access Token para carregar repositórios, commits e PRs diretamente.
           </p>
 
           {savedMsg && (
@@ -515,28 +265,17 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
           )}
 
           <form onSubmit={handleSaveToken} style={{ display: 'flex', gap: '10px' }}>
-            <input 
+            <input
               type="password"
-              placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              placeholder="«redacted:ghp_…»"
               value={token}
               onChange={(e) => setToken(e.target.value)}
-              style={{
-                flex: 1,
-                padding: '9px 12px',
-                borderRadius: '8px',
-                backgroundColor: 'var(--bg-input)',
-                border: '1px solid var(--border-color)',
-                fontSize: '13px',
-                color: 'var(--text-primary)'
-              }}
+              className="settings-input settings-input--grow"
             />
-            <button type="submit" className="topbar-btn btn-primary">
-              Salvar Token
-            </button>
+            <button type="submit" className="topbar-btn btn-primary">Salvar token</button>
           </form>
         </div>
 
-        {/* Card 5: Cache e manutenção do PWA */}
         <div className="card">
           <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <RefreshCw size={18} color="var(--accent-primary)" />
@@ -560,24 +299,21 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
           </button>
         </div>
 
-        {/* Card 5: Segurança e Backup */}
         <div className="card">
           <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Shield size={18} color="var(--danger)" />
-            Restauração de Dados
+            Restauração de dados
           </h3>
           <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px' }}>
-            Restaurar os dados originais de fábrica do aplicativo caso queira limpar o cache local.
+            Volta tudo para o estado limpo do app, sem apagar sua conta no banco.
           </p>
 
           <button className="topbar-btn" onClick={handleResetData} style={{ color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.3)' }}>
             <RefreshCw size={15} />
-            <span>Restaurar Dados Originais</span>
+            <span>Restaurar dados originais</span>
           </button>
         </div>
-
       </div>
     </div>
   );
 }
-

@@ -303,6 +303,24 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, user: { username: user.username, displayName: user.display_name } });
     }
 
+    if (url.pathname === '/api/auth/password' && req.method === 'POST') {
+      const session = getSessionFromRequest(req);
+      if (!session) return json(res, 401, { error: 'Não autenticado.' });
+      const body = await readJsonBody(req);
+      const currentPassword = String(body.currentPassword || '');
+      const newPassword = String(body.newPassword || '');
+      if (!currentPassword || !newPassword || newPassword.length < 8) {
+        return json(res, 400, { error: 'Informe a senha atual e uma nova senha com pelo menos 8 caracteres.' });
+      }
+      const user = db.prepare('SELECT id, password_hash, password_salt FROM users WHERE id = ?').get(session.user_id);
+      if (!user || !verifyPassword(currentPassword, user.password_hash, user.password_salt)) {
+        return json(res, 401, { error: 'Senha atual incorreta.' });
+      }
+      const { hash, salt } = hashPassword(newPassword);
+      db.prepare('UPDATE users SET password_hash = ?, password_salt = ?, updated_at = ? WHERE id = ?').run(hash, salt, nowIso(), user.id);
+      return json(res, 200, { ok: true });
+    }
+
     if (url.pathname === '/api/auth/logout' && req.method === 'POST') {
       const session = getSessionFromRequest(req);
       if (session) db.prepare('DELETE FROM sessions WHERE id = ?').run(session.id);

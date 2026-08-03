@@ -50,6 +50,14 @@ export async function login({ username, password }) {
   });
 }
 
+
+export async function changePassword({ currentPassword, newPassword }) {
+  return request('/auth/password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
 export async function logout() {
   try {
     return await request('/auth/logout', { method: 'POST' });
