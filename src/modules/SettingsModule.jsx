@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sun, Moon, Download, Key, RefreshCw, CheckCircle, Shield, User, Lock, Scan, Check } from 'lucide-react';
 import { saveStore } from '../services/store.js';
+import { clearPwaCache } from '../services/pwaService.js';
 import { createPasswordRecord, isWebAuthnAvailable, isPlatformAuthenticatorAvailable, registerBiometrics, authenticateBiometrics } from '../services/securityService.js';
 
 export default function SettingsModule({ state, setState, theme, setTheme, isPwaInstalled, onInstallPwa }) {
@@ -535,6 +536,30 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
               Salvar Token
             </button>
           </form>
+        </div>
+
+        {/* Card 5: Cache e manutenção do PWA */}
+        <div className="card">
+          <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <RefreshCw size={18} color="var(--accent-primary)" />
+            Cache e manutenção do PWA
+          </h3>
+          <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px' }}>
+            Limpa o cache do app, remove o service worker antigo e força o próximo carregamento a vir fresco.
+          </p>
+
+          <button
+            type="button"
+            className="topbar-btn btn-primary"
+            onClick={async () => {
+              if (window.confirm('Limpar cache do PWA e recarregar o app?')) {
+                await clearPwaCache({ reload: true });
+              }
+            }}
+          >
+            <RefreshCw size={15} />
+            <span>Limpar cache do PWA</span>
+          </button>
         </div>
 
         {/* Card 5: Segurança e Backup */}
