@@ -33,11 +33,7 @@ export default function App() {
 
   // Estado de bloqueio inicial do aplicativo baseada em sessão
   const isSecurityConfigured = Boolean(state.security?.enabled && state.security?.passwordHash);
-  const [isLocked, setIsLocked] = useState(() => {
-    if (!isSecurityConfigured) return false;
-    // Se a segurança está ativada, verifica se já foi autenticado nesta sessão do navegador
-    return sessionStorage.getItem('lippboard_session_auth') !== 'true';
-  });
+  const [isLocked, setIsLocked] = useState(() => Boolean(state.security?.enabled && state.security?.passwordHash));
 
   // Aplica tema ao atributo root
   useEffect(() => {
@@ -55,20 +51,17 @@ export default function App() {
     return () => document.body.classList.remove('sidebar-locked');
   }, [sidebarOpen]);
 
-  // Se o usuário ativar/desativar a segurança nas configurações, ajusta a sessão
+  // Se o usuário desativar a segurança, desbloqueia; se ativar, volta a exigir autenticação
   useEffect(() => {
-    if (!state.security?.enabled || !state.security?.passwordHash) {
-      setIsLocked(false);
-    }
-  }, [state.security]);
+    const securityEnabled = Boolean(state.security?.enabled && state.security?.passwordHash);
+    setIsLocked(securityEnabled);
+  }, [state.security?.enabled, state.security?.passwordHash]);
 
   const handleUnlock = () => {
-    sessionStorage.setItem('lippboard_session_auth', 'true');
     setIsLocked(false);
   };
 
   const handleLockApp = () => {
-    sessionStorage.removeItem('lippboard_session_auth');
     setIsLocked(true);
   };
 
