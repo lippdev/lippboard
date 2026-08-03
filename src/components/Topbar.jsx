@@ -52,12 +52,12 @@ export default function Topbar({ activeModule, theme, setTheme, onOpenDrawer, is
         {isSecurityEnabled && (
           <button 
             className="topbar-btn"
-            title="Bloquear aplicativo agora"
+            title="Sair do aplicativo"
             onClick={onLockApp}
             style={{ color: 'var(--accent-primary)' }}
           >
             <Lock size={16} />
-            <span>Bloquear</span>
+            <span>Sair</span>
           </button>
         )}
 

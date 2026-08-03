@@ -453,3 +453,80 @@
   justify-content: center;
 }
 
+
+
+/* ==========================================================================
+   Auth/Login Styles
+   ========================================================================== */
+.auth-overlay {
+  padding: 24px;
+}
+
+.auth-card {
+  max-width: 440px;
+  min-height: unset;
+}
+
+.auth-hero {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.auth-badge {
+  margin-bottom: 2px;
+}
+
+.auth-avatar {
+  display: grid;
+  place-items: center;
+  color: var(--text-primary);
+}
+
+.auth-shield-badge {
+  background: linear-gradient(180deg, rgba(71, 85, 105, 1), rgba(30, 41, 59, 1));
+}
+
+.auth-title {
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+
+.auth-subtitle {
+  max-width: 32ch;
+}
+
+.auth-form {
+  margin-top: 4px;
+}
+
+.auth-field {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.auth-field span {
+  padding-left: 2px;
+}
+
+.auth-submit {
+  margin-top: 4px;
+}
+
+.auth-switch {
+  margin-top: 8px;
+}
+
+.auth-error {
+  width: 100%;
+  justify-content: center;
+}

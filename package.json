@@ -8,7 +8,9 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "mcp": "node ./mcp/lippboard-mcp.js"
+    "mcp": "node ./mcp/lippboard-mcp.js",
+    "server": "node ./server/index.js",
+    "start": "node ./server/index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

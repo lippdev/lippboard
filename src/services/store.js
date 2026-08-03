@@ -1,105 +1,91 @@
 // Lipp Board - Initial Data Store & Local Storage Service
-const STORAGE_KEY = 'lippboard_pwa_data_v3';
-const LEGACY_STORAGE_KEYS = ['lippboard_pwa_data_v1', 'lippboard_pwa_data_v2'];
+import { createDefaultState } from './defaultState.js';
+import { saveRemoteState, fetchRemoteState } from './backendService.js';
 
-const DEFAULT_STATE = {
-  user: {
-    name: '',
-    handle: '',
-    email: '',
-    avatar: '',
-    githubToken: '',
-    lastSynced: ''
-  },
-  theme: 'dark',
-  github: {
-    prs: [],
-    activities: []
-  },
-  languages: {
-    currentStreak: 0,
-    todayStudied: false,
-    targetMinutes: 0,
-    todayMinutes: 0,
-    languagesList: [],
-    history: []
-  },
-  tasks: [],
-  thoughts: [],
-  goals: [],
-  calendar: [],
-  mood: {
-    todayScore: 0,
-    todayNote: '',
-    history: []
-  },
-  files: [],
-  subagentLogs: [],
-  security: {
-    enabled: false,
-    passwordHash: '',
-    passwordSalt: '',
-    biometricsEnabled: false,
-    webAuthnCredentialId: null,
-    autoLockOnHide: true
-  }
-};
+const STORAGE_KEY = 'lippboard_pwa_data_v4';
+const LEGACY_STORAGE_KEYS = ['lippboard_pwa_data_v1', 'lippboard_pwa_data_v2', 'lippboard_pwa_data_v3'];
 
 export const getStore = () => {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(STORAGE_KEY) || LEGACY_STORAGE_KEYS.map((key) => localStorage.getItem(key)).find(Boolean);
     if (!saved) {
       LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_STATE));
-      return DEFAULT_STATE;
+      const initialState = createDefaultState();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(initialState));
+      return initialState;
     }
 
     const parsed = JSON.parse(saved);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+    LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
     const legacySecurity = parsed.security || {};
     const migratedSecurity = {
-      ...DEFAULT_STATE.security,
+      ...createDefaultState().security,
       ...legacySecurity,
-      passwordHash: legacySecurity.passwordHash || legacySecurity.pinHash || DEFAULT_STATE.security.passwordHash,
-      passwordSalt: legacySecurity.passwordSalt || DEFAULT_STATE.security.passwordSalt,
+      passwordHash: legacySecurity.passwordHash || legacySecurity.pinHash || createDefaultState().security.passwordHash,
+      passwordSalt: legacySecurity.passwordSalt || createDefaultState().security.passwordSalt,
       enabled: Boolean(legacySecurity.enabled && (legacySecurity.passwordHash || legacySecurity.pinHash)),
     };
 
     return {
-      ...DEFAULT_STATE,
+      ...createDefaultState(),
       ...parsed,
       security: migratedSecurity,
       github: {
-        ...DEFAULT_STATE.github,
+        ...createDefaultState().github,
         ...(parsed.github || {})
       },
       languages: {
-        ...DEFAULT_STATE.languages,
+        ...createDefaultState().languages,
         ...(parsed.languages || {}),
-        languagesList: parsed.languages?.languagesList || DEFAULT_STATE.languages.languagesList,
+        languagesList: parsed.languages?.languagesList || createDefaultState().languages.languagesList,
         history: parsed.languages?.history || []
       },
       mood: {
-        ...DEFAULT_STATE.mood,
+        ...createDefaultState().mood,
         ...(parsed.mood || {}),
         history: parsed.mood?.history || []
       },
-      tasks: Array.isArray(parsed.tasks) ? parsed.tasks : DEFAULT_STATE.tasks,
-      thoughts: Array.isArray(parsed.thoughts) ? parsed.thoughts : DEFAULT_STATE.thoughts,
-      goals: Array.isArray(parsed.goals) ? parsed.goals : DEFAULT_STATE.goals,
-      calendar: Array.isArray(parsed.calendar) ? parsed.calendar : DEFAULT_STATE.calendar,
-      files: Array.isArray(parsed.files) ? parsed.files : DEFAULT_STATE.files,
-      subagentLogs: Array.isArray(parsed.subagentLogs) ? parsed.subagentLogs : DEFAULT_STATE.subagentLogs
+      tasks: Array.isArray(parsed.tasks) ? parsed.tasks : createDefaultState().tasks,
+      thoughts: Array.isArray(parsed.thoughts) ? parsed.thoughts : createDefaultState().thoughts,
+      goals: Array.isArray(parsed.goals) ? parsed.goals : createDefaultState().goals,
+      calendar: Array.isArray(parsed.calendar) ? parsed.calendar : createDefaultState().calendar,
+      files: Array.isArray(parsed.files) ? parsed.files : createDefaultState().files,
+      subagentLogs: Array.isArray(parsed.subagentLogs) ? parsed.subagentLogs : createDefaultState().subagentLogs
     };
   } catch (err) {
     console.error('Erro ao ler estado do localStorage:', err);
-    return DEFAULT_STATE;
+    return createDefaultState();
   }
 };
 
 export const saveStore = (state) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    void saveRemoteState(state);
   } catch (err) {
     console.error('Erro ao salvar estado no localStorage:', err);
+  }
+};
+
+export const loadRemoteStore = async () => {
+  try {
+    const remoteState = await fetchRemoteState();
+    if (remoteState) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteState));
+      return remoteState;
+    }
+  } catch (err) {
+    console.warn('Falha ao carregar estado remoto:', err);
+  }
+  return getStore();
+};
+
+export const clearStore = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+  } catch (err) {
+    console.error('Erro ao limpar store local:', err);
   }
 };

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Sun, Moon, Download, Key, RefreshCw, CheckCircle, Shield, User, Lock, Scan, Check } from 'lucide-react';
-import { saveStore } from '../services/store.js';
+import { saveStore, clearStore } from '../services/store.js';
 import { clearPwaCache } from '../services/pwaService.js';
+import { resetRemoteState } from '../services/backendService.js';
 import { createPasswordRecord, isWebAuthnAvailable, isPlatformAuthenticatorAvailable, registerBiometrics, authenticateBiometrics } from '../services/securityService.js';
 
 export default function SettingsModule({ state, setState, theme, setTheme, isPwaInstalled, onInstallPwa }) {
@@ -184,13 +185,10 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
     }
   };
 
-  const handleResetData = () => {
+  const handleResetData = async () => {
     if (window.confirm('Deseja realmente restaurar os dados originais do Lipp Board?')) {
-      localStorage.removeItem('lippboard_pwa_data_v1');
-      localStorage.removeItem('lippboard_pwa_data_v2');
-      localStorage.removeItem('lippboard_pwa_data_v3');
-      localStorage.removeItem('lippboard_db');
-      localStorage.removeItem('lippboard_db_v2');
+      clearStore();
+      await resetRemoteState();
       window.location.reload();
     }
   };
@@ -322,10 +320,10 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
         <div className="card">
           <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Lock size={18} color="var(--accent-primary)" />
-            Segurança do App & Face ID (VPS / PWA)
+            Bloqueio local opcional
           </h3>
           <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px' }}>
-            Proteja seu Lipp Board hospedado na VPS com senha de segurança e desbloqueio por Face ID / Biometria nativa.
+            O login principal agora usa banco SQLite. Esta área só controla um bloqueio local opcional neste dispositivo.
           </p>
 
           {secMsg && (
@@ -343,9 +341,9 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
           {/* Toggle de Ativar Segurança */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--border-color)' }}>
             <div>
-              <h4 style={{ fontSize: '14px', fontWeight: '600' }}>Bloqueio de Segurança do App</h4>
+              <h4 style={{ fontSize: '14px', fontWeight: '600' }}>Bloqueio local do dispositivo</h4>
               <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                {secConfig.enabled ? 'A proteção por senha / Biometria está ativada.' : 'Ative para solicitar autenticação ao abrir o PWA.'}
+                {secConfig.enabled ? 'O bloqueio local está ativo neste aparelho.' : 'Ative apenas se você quiser pedir senha/biometria ao abrir neste dispositivo.'}
               </p>
             </div>
             <button 
@@ -360,7 +358,7 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
           {/* Form de Definição de senha */}
           <div style={{ padding: '14px 0', borderBottom: '1px solid var(--border-color)' }}>
             <h4 style={{ fontSize: '13.5px', fontWeight: '600', marginBottom: '8px' }}>
-              {secConfig.passwordHash ? 'Alterar senha de segurança' : 'Cadastrar senha de segurança'}
+              {secConfig.passwordHash ? 'Alterar senha local' : 'Cadastrar senha local'}
             </h4>
             <form onSubmit={handleSetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div className="module-form-grid module-form-grid--2">
@@ -397,7 +395,7 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <button type="submit" className="topbar-btn">
-                  Salvar senha
+                  Salvar senha local
                 </button>
               </div>
             </form>
@@ -409,13 +407,13 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
               <div>
                 <h4 style={{ fontSize: '13.5px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Scan size={16} color="var(--accent-primary)" />
-                  Face ID / Biometria do Dispositivo (WebAuthn)
+                  Face ID / Biometria local (WebAuthn)
                 </h4>
                 <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                   {secConfig.biometricsEnabled 
                     ? 'Biometria registrada neste dispositivo.' 
                     : isWebAuthnAvailable() 
-                      ? 'Cadastre a biometria nativa para desbloquear o PWA sem digitar senha.'
+                      ? 'Cadastre a biometria nativa para desbloqueio local neste aparelho.'
                       : 'WebAuthn não está disponível no contexto atual (requer HTTPS na VPS).'}
                 </p>
               </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import MobileDock from './components/MobileDock';
@@ -18,27 +18,29 @@ import MoodModule from './modules/MoodModule';
 import SubagentBridgeModule from './modules/SubagentBridgeModule';
 import SettingsModule from './modules/SettingsModule';
 
-import { getStore, saveStore } from './services/store';
+import { getStore, saveStore, loadRemoteStore, clearStore } from './services/store';
+import { bootstrapAccount, getAuthStatus, login as apiLogin, logout as apiLogout } from './services/backendService';
 import './styles/theme.css';
 
 export default function App() {
-  const [state, setState] = useState(() => getStore());
-  const [activeModule, setActiveModule] = useState('github'); // Começa no GitHub igual à imagem
-  const [theme, setTheme] = useState(state.theme || 'dark');
+  const initialStore = useMemo(() => getStore(), []);
+  const [state, setState] = useState(initialStore);
+  const [activeModule, setActiveModule] = useState('github');
+  const [theme, setTheme] = useState(initialStore.theme || 'dark');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isPwaInstalled, setIsPwaInstalled] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authBootstrapDone, setAuthBootstrapDone] = useState(false);
 
-  // Estado de bloqueio inicial do aplicativo baseada em sessão
-  const isSecurityConfigured = Boolean(state.security?.enabled && (state.security?.passwordHash || state.security?.pinHash));
-  const [isLocked, setIsLocked] = useState(true);
-
-  // Aplica tema ao atributo root
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-    setState(prev => {
+    setState((prev) => {
       if (prev.theme === theme) return prev;
       const updated = { ...prev, theme };
       saveStore(updated);
@@ -52,37 +54,59 @@ export default function App() {
   }, [sidebarOpen]);
 
   useEffect(() => {
-    document.body.classList.toggle('app-locked', isLocked);
-    document.documentElement.classList.toggle('app-locked', isLocked);
+    document.body.classList.toggle('app-locked', !isAuthenticated);
+    document.documentElement.classList.toggle('app-locked', !isAuthenticated);
     return () => {
       document.body.classList.remove('app-locked');
       document.documentElement.classList.remove('app-locked');
     };
-  }, [isLocked]);
+  }, [isAuthenticated]);
 
+  useEffect(() => {
+    let cancelled = false;
 
-  const handleUnlock = () => {
-    setIsLocked(false);
-  };
+    const boot = async () => {
+      try {
+        const status = await getAuthStatus();
+        if (cancelled) return;
 
-  const handleSetupSecurity = (security) => {
-    const updated = {
-      ...state,
-      security: {
-        ...state.security,
-        ...security,
-      },
+        if (status.backendAvailable === false) {
+          setAuthError('Não foi possível conectar ao banco do app.');
+          setAuthLoading(false);
+          setIsAuthenticated(false);
+          return;
+        }
+
+        setAuthMode(status.firstRun ? 'setup' : 'login');
+
+        if (status.authenticated) {
+          const remoteState = await loadRemoteStore();
+          if (cancelled) return;
+          if (remoteState) {
+            setState(remoteState);
+            setTheme(remoteState.theme || 'dark');
+          }
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setAuthError(err.message || 'Falha ao iniciar o app.');
+          setIsAuthenticated(false);
+        }
+      } finally {
+        if (!cancelled) setAuthLoading(false);
+      }
     };
-    setState(updated);
-    saveStore(updated);
-    setIsLocked(false);
-  };
 
-  const handleLockApp = () => {
-    setIsLocked(true);
-  };
+    boot();
 
-  // Captura evento de instalação PWA
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     const handleBeforeInstall = (e) => {
       e.preventDefault();
@@ -90,8 +114,8 @@ export default function App() {
     };
 
     const handleVisibilityChange = () => {
-      if (document.hidden && state.security?.enabled && state.security?.autoLockOnHide) {
-        handleLockApp();
+      if (document.hidden && isAuthenticated) {
+        setIsAuthenticated(false);
       }
     };
 
@@ -106,7 +130,7 @@ export default function App() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [state.security?.enabled, state.security?.autoLockOnHide]);
+  }, [isAuthenticated]);
 
   const handleInstallPwa = async () => {
     if (!deferredPrompt) return;
@@ -116,6 +140,74 @@ export default function App() {
       setIsPwaInstalled(true);
     }
     setDeferredPrompt(null);
+  };
+
+  const handleLogin = async ({ username, password }) => {
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      await apiLogin({ username, password });
+      const remoteState = await loadRemoteStore();
+      const hydratedState = {
+        ...(remoteState || getStore()),
+        auth: {
+          ...(remoteState?.auth || {}),
+          username,
+          displayName: remoteState?.auth?.displayName || remoteState?.user?.name || username,
+          lastLoginAt: new Date().toISOString(),
+          rememberSession: true,
+        },
+      };
+      setState(hydratedState);
+      saveStore(hydratedState);
+      setTheme(hydratedState.theme || 'dark');
+      setIsAuthenticated(true);
+      setAuthBootstrapDone(true);
+    } catch (err) {
+      setAuthError(err.message || 'Falha no login.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSetup = async ({ username, displayName, password }) => {
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      await bootstrapAccount({ username, displayName, password });
+      const remoteState = await loadRemoteStore();
+      const hydratedState = {
+        ...(remoteState || getStore()),
+        auth: {
+          ...(remoteState?.auth || {}),
+          username,
+          displayName: remoteState?.auth?.displayName || remoteState?.user?.name || username,
+          lastLoginAt: new Date().toISOString(),
+          rememberSession: true,
+        },
+      };
+      setState(hydratedState);
+      saveStore(hydratedState);
+      setTheme(hydratedState.theme || 'dark');
+      setIsAuthenticated(true);
+      setAuthBootstrapDone(true);
+    } catch (err) {
+      setAuthError(err.message || 'Falha ao criar acesso.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    setAuthLoading(true);
+    try {
+      await apiLogout();
+    } finally {
+      clearStore();
+      setState(getStore());
+      setIsAuthenticated(false);
+      setAuthLoading(false);
+    }
   };
 
   const renderActiveModule = () => {
@@ -147,15 +239,30 @@ export default function App() {
     }
   };
 
-  if (isLocked) {
+  if (authLoading && !isAuthenticated) {
+    return (
+      <div className="app-container app-container--locked">
+        <div className="lockscreen-overlay auth-overlay">
+          <div className="lockscreen-card auth-card">
+            <div className="lockscreen-footer">
+              <span>Carregando banco do app...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
     return (
       <div className="app-container app-container--locked">
         <LockScreen
-          securityConfig={state.security}
-          userProfile={state.user}
-          mode={isSecurityConfigured ? 'unlock' : 'setup'}
-          onUnlock={handleUnlock}
-          onSetupSecurity={handleSetupSecurity}
+          mode={authMode === 'setup' && !authBootstrapDone ? 'setup' : 'login'}
+          isLoading={authLoading}
+          errorMessage={authError}
+          onLogin={handleLogin}
+          onSetup={handleSetup}
+          onSwitchMode={null}
         />
       </div>
     );
@@ -163,7 +270,7 @@ export default function App() {
 
   return (
     <div className="app-container">
-      <Sidebar 
+      <Sidebar
         activeModule={activeModule}
         setActiveModule={setActiveModule}
         isOpen={sidebarOpen}
@@ -176,15 +283,15 @@ export default function App() {
       {sidebarOpen && <button className="sidebar-backdrop" aria-label="Fechar menu" onClick={() => setSidebarOpen(false)} />}
 
       <main className="app-main">
-        <Topbar 
+        <Topbar
           activeModule={activeModule}
           theme={theme}
           setTheme={setTheme}
           onOpenDrawer={() => setDrawerOpen(true)}
           isPwaInstalled={isPwaInstalled}
           onInstallPwa={deferredPrompt ? handleInstallPwa : null}
-          isSecurityEnabled={state.security?.enabled}
-          onLockApp={handleLockApp}
+          isSecurityEnabled={true}
+          onLockApp={handleLogout}
         />
 
         <div className="app-content">
@@ -192,7 +299,7 @@ export default function App() {
         </div>
       </main>
 
-      <SubagentCommandDrawer 
+      <SubagentCommandDrawer
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         onStateChange={(newState) => setState({ ...newState })}
@@ -202,9 +309,8 @@ export default function App() {
         activeModule={activeModule}
         setActiveModule={setActiveModule}
         onOpenDrawer={() => setDrawerOpen(true)}
-        onOpenMenu={() => setSidebarOpen(prev => !prev)}
+        onOpenMenu={() => setSidebarOpen((prev) => !prev)}
       />
     </div>
   );
 }
-

@@ -1,141 +1,136 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Scan, Lock, AlertCircle, Sparkles, Eye, EyeOff, KeyRound } from 'lucide-react';
-import { createPasswordRecord, verifyPassword, authenticateBiometrics, isWebAuthnAvailable } from '../services/securityService';
+import React, { useMemo, useState } from 'react';
+import { ArrowRight, BadgeCheck, Eye, EyeOff, KeyRound, LogIn, Lock, Sparkles, UserPlus } from 'lucide-react';
 
-export default function LockScreen({ securityConfig, userProfile, mode = 'unlock', onUnlock, onSetupSecurity }) {
-  const [passwordInput, setPasswordInput] = useState('');
-  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-  const [isShaking, setIsShaking] = useState(false);
-  const [isAuthenticatingBio, setIsAuthenticatingBio] = useState(false);
+export default function LockScreen({
+  mode = 'login',
+  isLoading = false,
+  errorMessage = '',
+  onLogin,
+  onSetup,
+  onSwitchMode,
+}) {
+  const [username, setUsername] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showPasswordFallback, setShowPasswordFallback] = useState(false);
+  const [localError, setLocalError] = useState('');
 
   const isSetupMode = mode === 'setup';
-  const hasBiometrics = Boolean(!isSetupMode && securityConfig.biometricsEnabled && isWebAuthnAvailable());
+  const headline = useMemo(
+    () => (isSetupMode ? 'Criar acesso do Lipp Board' : 'Entrar no Lipp Board'),
+    [isSetupMode]
+  );
 
-  const handleSetupSubmit = useCallback(async (e) => {
-    e?.preventDefault?.();
-    setErrorMsg('');
+  const helperText = useMemo(
+    () => {
+      if (isSetupMode) {
+        return 'Crie o primeiro usuário administrador. Depois disso, o acesso passa a ser feito com login comum e banco SQLite.';
+      }
+      return 'Use seu usuário e senha para entrar. Seus dados ficam salvos no banco do app.';
+    },
+    [isSetupMode]
+  );
 
-    if (!passwordInput || passwordInput.length < 8) {
-      setErrorMsg('A senha precisa ter pelo menos 8 caracteres.');
+  const submitLabel = isSetupMode ? 'Criar conta e entrar' : 'Entrar';
+  const submitIcon = isSetupMode ? <UserPlus size={16} /> : <LogIn size={16} />;
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLocalError('');
+
+    const normalizedUsername = username.trim().toLowerCase();
+    const normalizedDisplayName = displayName.trim();
+
+    if (!normalizedUsername) {
+      setLocalError('Informe um usuário.');
       return;
     }
 
-    if (passwordInput !== confirmPasswordInput) {
-      setErrorMsg('A senha e a confirmação não conferem.');
+    if (!password || password.length < 8) {
+      setLocalError('A senha precisa ter pelo menos 8 caracteres.');
       return;
     }
 
-    const { hash, salt } = await createPasswordRecord(passwordInput);
-    onSetupSecurity?.({
-      enabled: true,
-      passwordHash: hash,
-      passwordSalt: salt,
-      biometricsEnabled: false,
-      webAuthnCredentialId: null,
-      autoLockOnHide: true,
-    });
-    onUnlock?.();
-  }, [confirmPasswordInput, onSetupSecurity, onUnlock, passwordInput]);
-
-  const handlePasswordSubmit = useCallback(async (currentPassword) => {
-    if (!currentPassword) return;
-    const isValid = await verifyPassword(currentPassword, securityConfig.passwordHash || securityConfig.pinHash, securityConfig.passwordSalt || '');
-    if (isValid) {
-      onUnlock?.();
-      return;
-    }
-
-    setIsShaking(true);
-    setErrorMsg('Senha de segurança incorreta.');
-    setPasswordInput('');
-    setTimeout(() => setIsShaking(false), 500);
-  }, [securityConfig.passwordHash, securityConfig.pinHash, securityConfig.passwordSalt, onUnlock]);
-
-  const handleBiometricAuth = useCallback(async ({ manual = false } = {}) => {
-    if (!hasBiometrics) {
-      if (manual) setShowPasswordFallback(true);
-      return;
-    }
-
-    setIsAuthenticatingBio(true);
-    setErrorMsg('');
-
-    try {
-      const success = await authenticateBiometrics(securityConfig.webAuthnCredentialId);
-      if (success) {
-        onUnlock?.();
+    if (isSetupMode) {
+      if (!normalizedDisplayName) {
+        setLocalError('Informe seu nome de exibição.');
         return;
       }
-      setShowPasswordFallback(true);
-    } catch (err) {
-      console.warn('Autenticação biométrica cancelada ou falhou:', err);
-      if (err.name !== 'NotAllowedError') {
-        setErrorMsg('Falha na autenticação biométrica. Use sua senha.');
+      if (password !== confirmPassword) {
+        setLocalError('A senha e a confirmação não conferem.');
+        return;
       }
-      setShowPasswordFallback(true);
-    } finally {
-      setIsAuthenticatingBio(false);
-    }
-  }, [hasBiometrics, onUnlock, securityConfig.webAuthnCredentialId]);
-
-  useEffect(() => {
-    if (isSetupMode) return;
-    if (hasBiometrics) {
-      handleBiometricAuth();
-    } else {
-      setShowPasswordFallback(true);
-    }
-  }, [handleBiometricAuth, hasBiometrics, isSetupMode]);
-
-  const handleSubmit = useCallback(async (e) => {
-    e?.preventDefault?.();
-    if (isSetupMode) {
-      await handleSetupSubmit(e);
+      await onSetup?.({
+        username: normalizedUsername,
+        displayName: normalizedDisplayName,
+        password,
+      });
       return;
     }
-    await handlePasswordSubmit(passwordInput);
-  }, [handlePasswordSubmit, handleSetupSubmit, isSetupMode, passwordInput]);
+
+    await onLogin?.({
+      username: normalizedUsername,
+      password,
+    });
+  };
 
   return (
-    <div className="lockscreen-overlay">
-      <div className={`lockscreen-card ${isShaking ? 'shake' : ''}`}>
-        <div className="lockscreen-header">
-          <div className="lockscreen-avatar-wrapper">
-            {userProfile?.avatar ? (
-              <img
-                src={userProfile.avatar}
-                alt={userProfile?.name || 'Lipp Board User'}
-                className="lockscreen-avatar"
-              />
-            ) : (
-              <div className="lockscreen-avatar lockscreen-avatar--empty" aria-hidden="true" />
-            )}
-            <div className="lockscreen-shield-badge">
-              <Lock size={14} color="#ffffff" />
+    <div className="lockscreen-overlay auth-overlay">
+      <div className="lockscreen-card auth-card">
+        <div className="auth-hero">
+          <div className="lockscreen-avatar-wrapper auth-badge">
+            <div className="lockscreen-avatar lockscreen-avatar--empty auth-avatar" aria-hidden="true">
+              <Lock size={26} />
+            </div>
+            <div className="lockscreen-shield-badge auth-shield-badge">
+              <BadgeCheck size={14} color="#ffffff" />
             </div>
           </div>
-          <h2 className="lockscreen-title">
-            {isSetupMode ? 'Defina uma senha de acesso' : 'Lipp Board Bloqueado'}
-          </h2>
-          <p className="lockscreen-subtitle">
-            {isSetupMode
-              ? 'Esse app exige uma senha para abrir. Depois você pode ativar Face ID nas configurações.'
-              : `${userProfile?.name ? `Olá, ${userProfile.name.split(' ')[0]}! ` : 'Olá! '}${hasBiometrics ? 'Use Face ID primeiro; a senha fica como fallback.' : 'Insira sua senha para continuar.'}`}
-          </p>
+
+          <h1 className="lockscreen-title auth-title">{headline}</h1>
+          <p className="lockscreen-subtitle auth-subtitle">{helperText}</p>
         </div>
 
-        {isSetupMode ? (
-          <form className="lockscreen-password-form" onSubmit={handleSubmit}>
+        <form className="lockscreen-password-form auth-form" onSubmit={handleSubmit}>
+          {isSetupMode && (
+            <label className="auth-field">
+              <span>Nome de exibição</span>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => { setLocalError(''); setDisplayName(e.target.value); }}
+                placeholder="Ex.: Filipe"
+                autoComplete="name"
+                className="lockscreen-password-input"
+              />
+            </label>
+          )}
+
+          <label className="auth-field">
+            <span>Usuário</span>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => { setLocalError(''); setUsername(e.target.value); }}
+              placeholder="ex.: lipp"
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck="false"
+              className="lockscreen-password-input"
+            />
+          </label>
+
+          <label className="auth-field">
+            <span>Senha</span>
             <div className="lockscreen-password-row">
               <input
                 type={showPassword ? 'text' : 'password'}
-                value={passwordInput}
-                onChange={(e) => { setErrorMsg(''); setPasswordInput(e.target.value); }}
-                placeholder="Nova senha"
-                autoComplete="new-password"
+                value={password}
+                onChange={(e) => { setLocalError(''); setPassword(e.target.value); }}
+                placeholder={isSetupMode ? 'Crie uma senha forte' : 'Digite sua senha'}
+                autoComplete={isSetupMode ? 'new-password' : 'current-password'}
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck="false"
@@ -144,110 +139,54 @@ export default function LockScreen({ securityConfig, userProfile, mode = 'unlock
               <button
                 type="button"
                 className="lockscreen-password-visibility"
-                onClick={() => setShowPassword(v => !v)}
+                onClick={() => setShowPassword((value) => !value)}
                 aria-label="Alternar visibilidade da senha"
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+          </label>
 
-            <div className="lockscreen-password-row">
+          {isSetupMode && (
+            <label className="auth-field">
+              <span>Confirmar senha</span>
               <input
                 type={showPassword ? 'text' : 'password'}
-                value={confirmPasswordInput}
-                onChange={(e) => { setErrorMsg(''); setConfirmPasswordInput(e.target.value); }}
-                placeholder="Confirmar senha"
+                value={confirmPassword}
+                onChange={(e) => { setLocalError(''); setConfirmPassword(e.target.value); }}
+                placeholder="Repita a senha"
                 autoComplete="new-password"
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck="false"
                 className="lockscreen-password-input"
               />
-            </div>
+            </label>
+          )}
 
-            <button type="submit" className="topbar-btn btn-primary lockscreen-unlock-btn">
-              <Lock size={15} />
-              <span>Salvar e entrar</span>
-            </button>
-          </form>
-        ) : hasBiometrics && !showPasswordFallback ? (
-          <>
-            <button
-              type="button"
-              className="topbar-btn btn-primary lockscreen-unlock-btn"
-              onClick={() => handleBiometricAuth({ manual: true })}
-              disabled={isAuthenticatingBio}
-            >
-              <Scan size={16} />
-              <span>{isAuthenticatingBio ? 'Reconhecendo Face ID...' : 'Desbloquear com Face ID'}</span>
-            </button>
+          <button type="submit" className="topbar-btn btn-primary lockscreen-unlock-btn auth-submit" disabled={isLoading}>
+            {submitIcon}
+            <span>{isLoading ? 'Processando...' : submitLabel}</span>
+            {!isLoading && <ArrowRight size={15} />}
+          </button>
+        </form>
 
-            <button
-              type="button"
-              className="topbar-btn lockscreen-fallback-btn"
-              onClick={() => setShowPasswordFallback(true)}
-            >
-              <KeyRound size={16} />
-              <span>Usar senha</span>
-            </button>
-          </>
-        ) : (
-          <form className="lockscreen-password-form" onSubmit={handleSubmit}>
-            <div className="lockscreen-password-row">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={passwordInput}
-                onChange={(e) => { setErrorMsg(''); setPasswordInput(e.target.value); }}
-                placeholder="Digite sua senha"
-                autoComplete="current-password"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck="false"
-                className="lockscreen-password-input"
-              />
-              <button
-                type="button"
-                className="lockscreen-password-visibility"
-                onClick={() => setShowPassword(v => !v)}
-                aria-label="Alternar visibilidade da senha"
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-
-            <button type="submit" className="topbar-btn btn-primary lockscreen-unlock-btn">
-              <Lock size={15} />
-              <span>Desbloquear</span>
-            </button>
-
-            {hasBiometrics && (
-              <button
-                type="button"
-                className="topbar-btn lockscreen-fallback-btn"
-                onClick={() => {
-                  setErrorMsg('');
-                  setShowPasswordFallback(false);
-                  handleBiometricAuth({ manual: true });
-                }}
-                disabled={isAuthenticatingBio}
-              >
-                <Scan size={16} />
-                <span>{isAuthenticatingBio ? 'Voltando ao Face ID...' : 'Voltar para Face ID'}</span>
-              </button>
-            )}
-          </form>
+        {(localError || errorMessage) && (
+          <div className="lockscreen-error auth-error">
+            <span>{localError || errorMessage}</span>
+          </div>
         )}
 
-        {errorMsg && (
-          <div className="lockscreen-error">
-            <AlertCircle size={14} />
-            <span>{errorMsg}</span>
-          </div>
+        {onSwitchMode && !isSetupMode && (
+          <button type="button" className="topbar-btn lockscreen-fallback-btn auth-switch" onClick={onSwitchMode}>
+            <UserPlus size={16} />
+            <span>Criar novo acesso</span>
+          </button>
         )}
 
         <div className="lockscreen-footer">
           <Sparkles size={13} color="var(--text-muted)" />
-          <span>Proteção PWA ativada para VPS</span>
+          <span>Login + banco SQLite + modo PWA</span>
         </div>
       </div>
     </div>
