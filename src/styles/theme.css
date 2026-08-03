@@ -985,3 +985,15 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+
+html.app-locked, body.app-locked {
+  overflow: hidden !important;
+}
+
+.app-container--locked {
+  min-height: 100dvh;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}

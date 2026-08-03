@@ -51,6 +51,15 @@ export default function App() {
     return () => document.body.classList.remove('sidebar-locked');
   }, [sidebarOpen]);
 
+  useEffect(() => {
+    document.body.classList.toggle('app-locked', isLocked);
+    document.documentElement.classList.toggle('app-locked', isLocked);
+    return () => {
+      document.body.classList.remove('app-locked');
+      document.documentElement.classList.remove('app-locked');
+    };
+  }, [isLocked]);
+
 
   const handleUnlock = () => {
     setIsLocked(false);
@@ -138,19 +147,22 @@ export default function App() {
     }
   };
 
-  return (
-    <div className="app-container">
-      {/* Tela de Bloqueio por senha / Face ID (WebAuthn) */}
-      {isLocked && (
-        <LockScreen 
+  if (isLocked) {
+    return (
+      <div className="app-container app-container--locked">
+        <LockScreen
           securityConfig={state.security}
           userProfile={state.user}
           mode={isSecurityConfigured ? 'unlock' : 'setup'}
           onUnlock={handleUnlock}
           onSetupSecurity={handleSetupSecurity}
         />
-      )}
+      </div>
+    );
+  }
 
+  return (
+    <div className="app-container">
       <Sidebar 
         activeModule={activeModule}
         setActiveModule={setActiveModule}
