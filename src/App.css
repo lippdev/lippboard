@@ -344,6 +344,12 @@
   margin-bottom: 12px;
 }
 
+.lockscreen-fallback-btn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 8px;
+}
+
 .lockscreen-pin-display {
   display: flex;
   gap: 16px;

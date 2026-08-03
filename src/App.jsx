@@ -139,7 +139,7 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {/* Tela de Bloqueio por PIN / Face ID (WebAuthn) */}
+      {/* Tela de Bloqueio por senha / Face ID (WebAuthn) */}
       {isLocked && isSecurityConfigured && (
         <LockScreen 
           securityConfig={state.security}
