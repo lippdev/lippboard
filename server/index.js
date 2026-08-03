@@ -579,6 +579,31 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+async function portHasHealthyLippBoard(port) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 1500);
+    const response = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: controller.signal });
+    clearTimeout(timer);
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+server.on('error', async (error) => {
+  if (error?.code === 'EADDRINUSE') {
+    const healthy = await portHasHealthyLippBoard(PORT);
+    if (healthy) {
+      console.log(`Lipp Board already running on http://0.0.0.0:${PORT}`);
+      process.exit(0);
+      return;
+    }
+    console.error(`Port ${PORT} is already in use and no healthy Lipp Board is answering there.`);
+  }
+  process.exit(1);
+});
+
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Lipp Board server listening on http://0.0.0.0:${PORT}`);
 });
