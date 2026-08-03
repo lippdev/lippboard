@@ -1,6 +1,6 @@
 // Lipp Board - Initial Data Store & Local Storage Service
-const STORAGE_KEY = 'lippboard_pwa_data_v2';
-const LEGACY_STORAGE_KEYS = ['lippboard_pwa_data_v1'];
+const STORAGE_KEY = 'lippboard_pwa_data_v3';
+const LEGACY_STORAGE_KEYS = ['lippboard_pwa_data_v1', 'lippboard_pwa_data_v2'];
 
 const DEFAULT_STATE = {
   user: {
@@ -37,10 +37,11 @@ const DEFAULT_STATE = {
   subagentLogs: [],
   security: {
     enabled: false,
-    pinHash: '',
+    passwordHash: '',
+    passwordSalt: '',
     biometricsEnabled: false,
     webAuthnCredentialId: null,
-    autoLockOnHide: false
+    autoLockOnHide: true
   }
 };
 
@@ -52,6 +53,7 @@ export const getStore = () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_STATE));
       return DEFAULT_STATE;
     }
+
     const parsed = JSON.parse(saved);
     return {
       ...DEFAULT_STATE,

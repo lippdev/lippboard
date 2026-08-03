@@ -288,6 +288,62 @@
   margin: 0;
 }
 
+.lockscreen-password-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 8px 0 18px;
+}
+
+.lockscreen-password-row {
+  width: 100%;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.lockscreen-password-input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary, #ffffff);
+  font-size: 15px;
+  outline: none;
+}
+
+.lockscreen-password-input:focus {
+  border-color: rgba(99, 102, 241, 0.7);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.14);
+}
+
+.lockscreen-password-visibility {
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary, #ffffff);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.lockscreen-unlock-btn,
+.lockscreen-bio-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.lockscreen-bio-btn {
+  margin-bottom: 12px;
+}
+
 .lockscreen-pin-display {
   display: flex;
   gap: 16px;

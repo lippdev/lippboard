@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Scan, Lock, Delete, AlertCircle, Sparkles } from 'lucide-react';
-import { verifyPin, authenticateBiometrics } from '../services/securityService';
+import { Scan, Lock, AlertCircle, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { verifyPassword, authenticateBiometrics } from '../services/securityService';
 
 export default function LockScreen({ securityConfig, userProfile, onUnlock }) {
-  const [pinInput, setPinInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isShaking, setIsShaking] = useState(false);
   const [isAuthenticatingBio, setIsAuthenticatingBio] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Tenta autenticar com Face ID / Biometria automaticamente se ativado
   const handleBiometricAuth = useCallback(async () => {
@@ -23,7 +24,7 @@ export default function LockScreen({ securityConfig, userProfile, onUnlock }) {
       console.warn('Autenticação biométrica cancelada ou falhou:', err);
       // Não exibe erro chamativo se o usuário apenas cancelou o modal do SO
       if (err.name !== 'NotAllowedError') {
-        setErrorMsg('Falha na autenticação biométrica. Use seu PIN.');
+        setErrorMsg('Falha na autenticação biométrica. Use sua senha.');
       }
     } finally {
       setIsAuthenticatingBio(false);
@@ -37,62 +38,24 @@ export default function LockScreen({ securityConfig, userProfile, onUnlock }) {
     }
   }, [securityConfig.biometricsEnabled, handleBiometricAuth]);
 
-  // Trata digitação do PIN
-  const handleDigit = useCallback((digit) => {
-    setPinInput(prev => {
-      if (prev.length < 6) {
-        setErrorMsg('');
-        return prev + digit;
-      }
-      return prev;
-    });
-  }, []);
-
-  const handleDelete = useCallback(() => {
-    setErrorMsg('');
-    setPinInput(prev => prev.slice(0, -1));
-  }, []);
-
-  const handleClear = useCallback(() => {
-    setErrorMsg('');
-    setPinInput('');
-  }, []);
-
-  // Submeter verificação do PIN
-  const handlePinSubmit = useCallback(async (currentPin) => {
-    if (!currentPin) return;
-    const isValid = await verifyPin(currentPin, securityConfig.pinHash);
+  // Trata digitação do senha
+  const handlePasswordSubmit = useCallback(async (currentPassword) => {
+    if (!currentPassword) return;
+    const isValid = await verifyPassword(currentPassword, securityConfig.passwordHash, securityConfig.passwordSalt);
     if (isValid) {
       onUnlock();
     } else {
       setIsShaking(true);
-      setErrorMsg('PIN de segurança incorreto.');
-      setPinInput('');
+      setErrorMsg('Senha de segurança incorreta.');
+      setPasswordInput('');
       setTimeout(() => setIsShaking(false), 500);
     }
-  }, [securityConfig.pinHash, onUnlock]);
+  }, [securityConfig.passwordHash, securityConfig.passwordSalt, onUnlock]);
 
-  // Submete automaticamente quando o PIN atinge 4 a 6 dígitos se bater o hash
-  useEffect(() => {
-    if (pinInput.length >= 4) {
-      handlePinSubmit(pinInput);
-    }
-  }, [pinInput, handlePinSubmit]);
-
-  // Listener para teclado físico
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key >= '0' && e.key <= '9') {
-        handleDigit(e.key);
-      } else if (e.key === 'Backspace') {
-        handleDelete();
-      } else if (e.key === 'Escape') {
-        handleClear();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleDigit, handleDelete, handleClear]);
+  const handleSubmit = useCallback(async (e) => {
+    e?.preventDefault?.();
+    await handlePasswordSubmit(passwordInput);
+  }, [handlePasswordSubmit, passwordInput]);
 
   return (
     <div className="lockscreen-overlay">
@@ -116,19 +79,32 @@ export default function LockScreen({ securityConfig, userProfile, onUnlock }) {
           </div>
           <h2 className="lockscreen-title">Lipp Board Bloqueado</h2>
           <p className="lockscreen-subtitle">
-            {userProfile?.name ? `Olá, ${userProfile.name.split(' ')[0]}! ` : 'Olá! '}Insira seu PIN ou ative o Face ID para continuar.
+            {userProfile?.name ? `Olá, ${userProfile.name.split(' ')[0]}! ` : 'Olá! '}Insira sua senha ou use o Face ID para continuar.
           </p>
         </div>
 
-        {/* Indicador visual de PIN (Dots) */}
-        <div className="lockscreen-pin-display">
-          {[0, 1, 2, 3].map((idx) => (
-            <div 
-              key={idx} 
-              className={`pin-dot ${idx < pinInput.length ? 'active' : ''}`}
+        <form className="lockscreen-password-form" onSubmit={handleSubmit}>
+          <div className="lockscreen-password-row">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={passwordInput}
+              onChange={(e) => { setErrorMsg(''); setPasswordInput(e.target.value); }}
+              placeholder="Digite sua senha"
+              autoComplete="current-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck="false"
+              className="lockscreen-password-input"
             />
-          ))}
-        </div>
+            <button type="button" className="lockscreen-password-visibility" onClick={() => setShowPassword(v => !v)} aria-label="Alternar visibilidade da senha">
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          <button type="submit" className="topbar-btn btn-primary lockscreen-unlock-btn">
+            <Lock size={15} />
+            <span>Desbloquear</span>
+          </button>
+        </form>
 
         {/* Mensagem de Erro */}
         {errorMsg && (
@@ -138,51 +114,18 @@ export default function LockScreen({ securityConfig, userProfile, onUnlock }) {
           </div>
         )}
 
-        {/* Teclado Numérico Virtual */}
-        <div className="lockscreen-keypad">
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
-            <button 
-              key={num} 
-              type="button"
-              className="keypad-btn" 
-              onClick={() => handleDigit(num)}
-            >
-              {num}
-            </button>
-          ))}
-          
-          {/* Botão Biometria / Face ID se disponível */}
-          {securityConfig.biometricsEnabled ? (
-            <button 
-              type="button"
-              className="keypad-btn bio-btn" 
-              onClick={handleBiometricAuth}
-              title="Entrar com Face ID / Touch ID"
-              disabled={isAuthenticatingBio}
-            >
-              <Scan size={22} color="var(--accent-primary, #6366f1)" />
-            </button>
-          ) : (
-            <div className="keypad-btn empty-btn" />
-          )}
-
+        {securityConfig.biometricsEnabled ? (
           <button 
             type="button"
-            className="keypad-btn" 
-            onClick={() => handleDigit('0')}
+            className="topbar-btn bio-btn lockscreen-bio-btn" 
+            onClick={handleBiometricAuth}
+            title="Entrar com Face ID / Touch ID"
+            disabled={isAuthenticatingBio}
           >
-            0
+            <Scan size={18} color="var(--accent-primary, #6366f1)" />
+            <span>{isAuthenticatingBio ? 'Verificando...' : 'Face ID'}</span>
           </button>
-
-          <button 
-            type="button"
-            className="keypad-btn action-btn" 
-            onClick={handleDelete}
-            title="Apagar dígito"
-          >
-            <Delete size={20} />
-          </button>
-        </div>
+        ) : null}
 
         {/* Rodapé informativo */}
         <div className="lockscreen-footer">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sun, Moon, Download, Key, RefreshCw, CheckCircle, Shield, User, Lock, Scan, Check } from 'lucide-react';
 import { saveStore } from '../services/store.js';
-import { hashPin, isWebAuthnAvailable, isPlatformAuthenticatorAvailable, registerBiometrics, authenticateBiometrics } from '../services/securityService.js';
+import { createPasswordRecord, isWebAuthnAvailable, isPlatformAuthenticatorAvailable, registerBiometrics, authenticateBiometrics } from '../services/securityService.js';
 
 export default function SettingsModule({ state, setState, theme, setTheme, isPwaInstalled, onInstallPwa }) {
   const [token, setToken] = useState(state.user.githubToken || '');
@@ -27,9 +27,9 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
   ];
 
   // Segurança State
-  const secConfig = state.security || { enabled: false, pinHash: '', biometricsEnabled: false, autoLockOnHide: true };
-  const [pin, setPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
+  const secConfig = state.security || { enabled: false, passwordHash: '', passwordSalt: '', biometricsEnabled: false, autoLockOnHide: true };
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [secMsg, setSecMsg] = useState('');
   const [secError, setSecError] = useState('');
   const [_hasPlatformBio, setHasPlatformBio] = useState(false);
@@ -72,40 +72,41 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
     setTimeout(() => setProfileMsg(''), 3000);
   };
 
-  const handleSetPin = async (e) => {
+  const handleSetPassword = async (e) => {
     e.preventDefault();
     setSecMsg('');
     setSecError('');
 
-    if (!pin || pin.length < 4) {
-      setSecError('O PIN de segurança deve ter pelo menos 4 dígitos.');
+    if (!password || password.length < 8) {
+      setSecError('A senha de segurança deve ter pelo menos 8 caracteres.');
       return;
     }
-    if (pin !== confirmPin) {
-      setSecError('Os dígitos do PIN e da confirmação não conferem.');
+    if (password !== confirmPassword) {
+      setSecError('A senha e a confirmação não conferem.');
       return;
     }
 
-    const hashed = await hashPin(pin);
+    const { hash, salt } = await createPasswordRecord(password);
     const updated = {
       ...state,
       security: {
         ...secConfig,
         enabled: true,
-        pinHash: hashed
+        passwordHash: hash,
+        passwordSalt: salt
       }
     };
     setState(updated);
     saveStore(updated);
-    setPin('');
-    setConfirmPin('');
-    setSecMsg('PIN de segurança salvo com sucesso e proteção ativada!');
+    setPassword('');
+    setConfirmPassword('');
+    setSecMsg('Senha de segurança salva com sucesso e proteção ativada!');
     setTimeout(() => setSecMsg(''), 4000);
   };
 
   const handleToggleSecurity = (enabled) => {
-    if (enabled && !secConfig.pinHash) {
-      setSecError('Cadastre um PIN antes de ativar a proteção por senha.');
+    if (enabled && !secConfig.passwordHash) {
+      setSecError('Cadastre uma senha antes de ativar a proteção.');
       return;
     }
     const updated = {
@@ -185,6 +186,10 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
   const handleResetData = () => {
     if (window.confirm('Deseja realmente restaurar os dados originais do Lipp Board?')) {
       localStorage.removeItem('lippboard_pwa_data_v1');
+      localStorage.removeItem('lippboard_pwa_data_v2');
+      localStorage.removeItem('lippboard_pwa_data_v3');
+      localStorage.removeItem('lippboard_db');
+      localStorage.removeItem('lippboard_db_v2');
       window.location.reload();
     }
   };
@@ -312,14 +317,14 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
           </form>
         </div>
 
-        {/* Card Nova: Segurança, PIN e Face ID / WebAuthn */}
+        {/* Card Nova: Segurança, senha e Face ID / WebAuthn */}
         <div className="card">
           <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Lock size={18} color="var(--accent-primary)" />
             Segurança do App & Face ID (VPS / PWA)
           </h3>
           <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px' }}>
-            Proteja seu Lipp Board hospedado na VPS com PIN de segurança e desbloqueio por Face ID / Biometria nativa.
+            Proteja seu Lipp Board hospedado na VPS com senha de segurança e desbloqueio por Face ID / Biometria nativa.
           </p>
 
           {secMsg && (
@@ -339,7 +344,7 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
             <div>
               <h4 style={{ fontSize: '14px', fontWeight: '600' }}>Bloqueio de Segurança do App</h4>
               <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                {secConfig.enabled ? 'A proteção por PIN / Biometria está ativada.' : 'Ative para solicitar autenticação ao abrir o PWA.'}
+                {secConfig.enabled ? 'A proteção por senha / Biometria está ativada.' : 'Ative para solicitar autenticação ao abrir o PWA.'}
               </p>
             </div>
             <button 
@@ -351,19 +356,19 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
             </button>
           </div>
 
-          {/* Form de Definição de PIN */}
+          {/* Form de Definição de senha */}
           <div style={{ padding: '14px 0', borderBottom: '1px solid var(--border-color)' }}>
             <h4 style={{ fontSize: '13.5px', fontWeight: '600', marginBottom: '8px' }}>
-              {secConfig.pinHash ? 'Alterar PIN de Segurança' : 'Cadastrar PIN de Segurança'}
+              {secConfig.passwordHash ? 'Alterar senha de segurança' : 'Cadastrar senha de segurança'}
             </h4>
-            <form onSubmit={handleSetPin} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <form onSubmit={handleSetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div className="module-form-grid module-form-grid--2">
                 <input 
                   type="password"
-                  placeholder="Novo PIN (ex: 1234)"
-                  maxLength={6}
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
+                  placeholder="Nova senha"
+                  maxLength={64}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   style={{
                     padding: '9px 12px',
                     borderRadius: '8px',
@@ -375,10 +380,10 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
                 />
                 <input 
                   type="password"
-                  placeholder="Confirmar PIN"
-                  maxLength={6}
-                  value={confirmPin}
-                  onChange={(e) => setConfirmPin(e.target.value)}
+                  placeholder="Confirmar senha"
+                  maxLength={64}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   style={{
                     padding: '9px 12px',
                     borderRadius: '8px',
@@ -391,7 +396,7 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <button type="submit" className="topbar-btn">
-                  Salvar PIN
+                  Salvar senha
                 </button>
               </div>
             </form>
@@ -409,7 +414,7 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
                   {secConfig.biometricsEnabled 
                     ? 'Biometria registrada neste dispositivo.' 
                     : isWebAuthnAvailable() 
-                      ? 'Cadastre a biometria nativa para desbloquear o PWA sem digitar PIN.'
+                      ? 'Cadastre a biometria nativa para desbloquear o PWA sem digitar senha.'
                       : 'WebAuthn não está disponível no contexto atual (requer HTTPS na VPS).'}
                 </p>
               </div>

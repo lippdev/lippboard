@@ -1,40 +1,100 @@
-// Lipp Board - Security & Biometrics (WebAuthn / Passkey & PIN) Service
+// Lipp Board - Security & Biometrics (WebAuthn / Password) Service
 
-/**
- * Gera um hash SHA-256 para o PIN informado utilizando a Web Crypto API nativa do navegador.
- */
+const PBKDF2_ITERATIONS = 210000;
+const PBKDF2_HASH = 'SHA-256';
+
+function bytesToBase64(bytes) {
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function base64ToBytes(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+function utf8(str) {
+  return new TextEncoder().encode(String(str));
+}
+
+function constantTimeEquals(a, b) {
+  if (!a || !b || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+function ensureCrypto() {
+  if (typeof crypto === 'undefined' || !crypto.subtle) {
+    throw new Error('Web Crypto API indisponível neste navegador.');
+  }
+}
+
+export async function createPasswordRecord(password) {
+  ensureCrypto();
+  if (!password) return { hash: '', salt: '' };
+
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const key = await crypto.subtle.importKey('raw', utf8(password), 'PBKDF2', false, ['deriveBits']);
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt,
+      iterations: PBKDF2_ITERATIONS,
+      hash: PBKDF2_HASH,
+    },
+    key,
+    256
+  );
+
+  return {
+    hash: bytesToBase64(new Uint8Array(derivedBits)),
+    salt: bytesToBase64(salt),
+  };
+}
+
+export async function verifyPassword(password, storedHash, storedSalt) {
+  ensureCrypto();
+  if (!password || !storedHash || !storedSalt) return false;
+
+  const salt = base64ToBytes(storedSalt);
+  const key = await crypto.subtle.importKey('raw', utf8(password), 'PBKDF2', false, ['deriveBits']);
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt,
+      iterations: PBKDF2_ITERATIONS,
+      hash: PBKDF2_HASH,
+    },
+    key,
+    256
+  );
+
+  return constantTimeEquals(bytesToBase64(new Uint8Array(derivedBits)), storedHash);
+}
+
+// Backwards-compatible aliases for older code paths.
 export async function hashPin(pin) {
-  if (!pin) return '';
-  const encoder = new TextEncoder();
-  const data = encoder.encode(pin.toString());
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  const { hash } = await createPasswordRecord(pin);
+  return hash;
 }
 
-/**
- * Verifica se um PIN bate com o hash armazenado.
- */
-export async function verifyPin(pin, storedHash) {
-  if (!pin || !storedHash) return false;
-  const hash = await hashPin(pin);
-  return hash === storedHash;
+export async function verifyPin(pin, storedHash, storedSalt = '') {
+  return verifyPassword(pin, storedHash, storedSalt);
 }
 
-/**
- * Checa se o navegador/dispositivo suporta a WebAuthn API (Face ID, Touch ID, Windows Hello).
- */
 export function isWebAuthnAvailable() {
   return (
     typeof window !== 'undefined' &&
+    window.isSecureContext &&
     window.PublicKeyCredential !== undefined &&
     typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function'
   );
 }
 
-/**
- * Checa se um autenticador de plataforma (ex: Face ID / Touch ID) está disponível no dispositivo.
- */
 export async function isPlatformAuthenticatorAvailable() {
   if (!isWebAuthnAvailable()) return false;
   try {
@@ -45,117 +105,85 @@ export async function isPlatformAuthenticatorAvailable() {
   }
 }
 
-/**
- * Cadastra a biometria do dispositivo (Face ID / Passkey) usando a WebAuthn API.
- */
-export async function registerBiometrics(userHandle = 'lippdev', userName = 'Filipe Moreira') {
+export async function registerBiometrics(userHandle = 'lippboard', userName = 'Lipp Board') {
   if (!isWebAuthnAvailable()) {
     throw new Error('WebAuthn não é suportado neste navegador.');
   }
 
-  // Desafios e IDs aleatórios convertidos para Uint8Array
   const challenge = crypto.getRandomValues(new Uint8Array(32));
-  const userId = new TextEncoder().encode(userHandle);
+  const userId = utf8(userHandle || 'lippboard');
+  const rpId = window.location.hostname;
 
   const publicKeyCredentialCreationOptions = {
     challenge,
     rp: {
       name: 'Lipp Board PWA',
-      id: window.location.hostname
+      id: rpId,
     },
     user: {
       id: userId,
-      name: userName,
-      displayName: userName
+      name: userHandle || 'lippboard',
+      displayName: userName || 'Lipp Board',
     },
     pubKeyCredParams: [
-      { alg: -7, type: 'public-key' },  // ES256
-      { alg: -257, type: 'public-key' } // RS256
+      { alg: -7, type: 'public-key' },
+      { alg: -257, type: 'public-key' },
     ],
     authenticatorSelection: {
-      authenticatorAttachment: 'platform', // Força o uso da biometria local (Face ID / Touch ID)
+      authenticatorAttachment: 'platform',
       userVerification: 'required',
-      residentKey: 'preferred'
+      residentKey: 'preferred',
     },
     timeout: 60000,
-    attestation: 'none'
+    attestation: 'none',
   };
 
   try {
     const credential = await navigator.credentials.create({
-      publicKey: publicKeyCredentialCreationOptions
+      publicKey: publicKeyCredentialCreationOptions,
     });
 
     if (!credential) {
       throw new Error('Não foi possível gerar a credencial biométrica.');
     }
 
-    // Converte o ID da credencial para string Base64 para armazenar no store
-    const credentialId = arrayBufferToBase64(credential.rawId);
-    return credentialId;
+    return bytesToBase64(new Uint8Array(credential.rawId));
   } catch (err) {
     console.error('Erro ao cadastrar biometria:', err);
     throw err;
   }
 }
 
-/**
- * Solicita autenticação biométrica (Face ID / Touch ID) via WebAuthn API.
- */
 export async function authenticateBiometrics(rawCredentialId = null) {
   if (!isWebAuthnAvailable()) {
     throw new Error('Biometria não suportada neste dispositivo.');
   }
 
   const challenge = crypto.getRandomValues(new Uint8Array(32));
-
   const publicKeyCredentialRequestOptions = {
     challenge,
     timeout: 60000,
     userVerification: 'required',
-    rpId: window.location.hostname
+    rpId: window.location.hostname,
   };
 
   if (rawCredentialId) {
-    const credentialIdBuffer = base64ToArrayBuffer(rawCredentialId);
     publicKeyCredentialRequestOptions.allowCredentials = [
       {
-        id: credentialIdBuffer,
+        id: base64ToBytes(rawCredentialId),
         type: 'public-key',
-        transports: ['internal']
-      }
+        transports: ['internal'],
+      },
     ];
   }
 
   try {
     const assertion = await navigator.credentials.get({
-      publicKey: publicKeyCredentialRequestOptions
+      publicKey: publicKeyCredentialRequestOptions,
     });
-
     return !!assertion;
   } catch (err) {
     console.error('Erro ao autenticar com biometria:', err);
     throw err;
   }
-}
-
-// Helpers para conversão de ArrayBuffer / Base64
-function arrayBufferToBase64(buffer) {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return window.btoa(binary);
-}
-
-function base64ToArrayBuffer(base64) {
-  const binaryString = window.atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes.buffer;
 }

@@ -32,7 +32,7 @@ export default function App() {
   const [isPwaInstalled, setIsPwaInstalled] = useState(false);
 
   // Estado de bloqueio inicial do aplicativo baseada em sessão
-  const isSecurityConfigured = Boolean(state.security?.enabled && state.security?.pinHash);
+  const isSecurityConfigured = Boolean(state.security?.enabled && state.security?.passwordHash);
   const [isLocked, setIsLocked] = useState(() => {
     if (!isSecurityConfigured) return false;
     // Se a segurança está ativada, verifica se já foi autenticado nesta sessão do navegador
@@ -57,7 +57,7 @@ export default function App() {
 
   // Se o usuário ativar/desativar a segurança nas configurações, ajusta a sessão
   useEffect(() => {
-    if (!state.security?.enabled || !state.security?.pinHash) {
+    if (!state.security?.enabled || !state.security?.passwordHash) {
       setIsLocked(false);
     }
   }, [state.security]);
@@ -79,14 +79,24 @@ export default function App() {
       setDeferredPrompt(e);
     };
 
+    const handleVisibilityChange = () => {
+      if (document.hidden && state.security?.enabled && state.security?.autoLockOnHide) {
+        handleLockApp();
+      }
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsPwaInstalled(true);
     }
 
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-  }, []);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [state.security?.enabled, state.security?.autoLockOnHide]);
 
   const handleInstallPwa = async () => {
     if (!deferredPrompt) return;
