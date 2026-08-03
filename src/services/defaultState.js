@@ -41,10 +41,11 @@ export const createDefaultState = () => ({
   },
   auth: {
     username: '',
-    displayName: '',
+    displayName: 'Filipe',
     lastLoginAt: '',
-    rememberSession: true
+    rememberSession: true,
+    passkeyRegistered: false
   }
 });
 
-export const DEFAULT_STATE_VERSION = 4;
+export const DEFAULT_STATE_VERSION = 5;

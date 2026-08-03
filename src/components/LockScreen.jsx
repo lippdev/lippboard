@@ -1,15 +1,19 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowRight, BadgeCheck, Eye, EyeOff, KeyRound, LogIn, Lock, Sparkles, ShieldCheck } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Eye, EyeOff, KeyRound, LogIn, Lock, Sparkles, ShieldCheck, UserPlus } from 'lucide-react';
 
 export default function LockScreen({
   mode = 'login',
   isLoading = false,
   errorMessage = '',
+  defaultDisplayName = 'Filipe',
+  canUseFaceId = false,
+  hasFaceId = false,
   onLogin,
   onSetup,
+  onFaceIdLogin,
 }) {
   const [username, setUsername] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [displayName, setDisplayName] = useState(defaultDisplayName);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -21,15 +25,14 @@ export default function LockScreen({
     [isSetupMode]
   );
 
-  const helperText = useMemo(
-    () => {
-      if (isSetupMode) {
-        return 'Crie o primeiro usuário administrador. Depois disso, o acesso passa a ser feito com login comum e banco SQLite.';
-      }
-      return 'Use seu usuário e senha para entrar. Seus dados ficam salvos no banco do app.';
-    },
-    [isSetupMode]
-  );
+  const helperText = useMemo(() => {
+    if (isSetupMode) {
+      return 'Crie o primeiro usuário administrador. Depois disso, o acesso passa a ser feito com login comum, sessão no banco e Face ID opcional.';
+    }
+    return hasFaceId
+      ? 'Entre com usuário e senha ou toque em Face ID para usar o desbloqueio biométrico neste iPhone.'
+      : 'Use seu usuário e senha para entrar. Depois você pode cadastrar Face ID nas configurações.';
+  }, [hasFaceId, isSetupMode]);
 
   const submitLabel = isSetupMode ? 'Criar conta e entrar' : 'Entrar';
   const submitIcon = isSetupMode ? <UserPlus size={16} /> : <LogIn size={16} />;
@@ -102,8 +105,8 @@ export default function LockScreen({
               <strong>{isSetupMode ? 'Primeiro acesso' : 'Login normal'}</strong>
             </div>
             <div>
-              <span className="auth-summary-label">Segurança</span>
-              <strong>Senha + sessão no servidor</strong>
+              <span className="auth-summary-label">Autenticação</span>
+              <strong>{hasFaceId ? 'Senha + Face ID' : 'Senha + sessão no servidor'}</strong>
             </div>
           </div>
         </div>
@@ -185,6 +188,18 @@ export default function LockScreen({
             <span>{isLoading ? 'Processando...' : submitLabel}</span>
             {!isLoading && <ArrowRight size={15} />}
           </button>
+
+          {!isSetupMode && canUseFaceId && hasFaceId && onFaceIdLogin && (
+            <button
+              type="button"
+              className="topbar-btn lockscreen-fallback-btn auth-switch"
+              onClick={onFaceIdLogin}
+              disabled={isLoading}
+            >
+              <ShieldCheck size={16} />
+              <span>Entrar com Face ID</span>
+            </button>
+          )}
         </form>
 
         {(localError || errorMessage) && (
@@ -195,7 +210,7 @@ export default function LockScreen({
 
         <div className="lockscreen-footer">
           <Sparkles size={13} color="var(--text-muted)" />
-          <span>Login comum, banco SQLite e sessão segura</span>
+          <span>Login comum, Face ID opcional e banco SQLite</span>
         </div>
       </div>
     </div>

@@ -5,7 +5,6 @@ import MobileDock from './components/MobileDock';
 import SubagentCommandDrawer from './components/SubagentCommandDrawer';
 import LockScreen from './components/LockScreen';
 
-// Módulos
 import HomeModule from './modules/HomeModule';
 import GithubModule from './modules/GithubModule';
 import LanguagesModule from './modules/LanguagesModule';
@@ -20,6 +19,7 @@ import SettingsModule from './modules/SettingsModule';
 
 import { getStore, saveStore, loadRemoteStore, clearStore } from './services/store';
 import { bootstrapAccount, getAuthStatus, login as apiLogin, logout as apiLogout } from './services/backendService';
+import { isFaceIdAvailable, loginWithFaceId } from './services/passkeyService';
 import './styles/theme.css';
 
 export default function App() {
@@ -37,6 +37,8 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authBootstrapDone, setAuthBootstrapDone] = useState(false);
+  const [faceIdSupported, setFaceIdSupported] = useState(false);
+  const [passkeyRegistered, setPasskeyRegistered] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -47,6 +49,10 @@ export default function App() {
       return updated;
     });
   }, [theme]);
+
+  useEffect(() => {
+    setFaceIdSupported(isFaceIdAvailable());
+  }, []);
 
   useEffect(() => {
     document.body.classList.toggle('sidebar-locked', sidebarOpen);
@@ -78,13 +84,22 @@ export default function App() {
         }
 
         setAuthMode(status.firstRun ? 'setup' : 'login');
+        setPasskeyRegistered(Boolean(status.passkeyRegistered));
 
         if (status.authenticated) {
           const remoteState = await loadRemoteStore();
           if (cancelled) return;
           if (remoteState) {
-            setState(remoteState);
+            const hydrated = {
+              ...remoteState,
+              auth: {
+                ...(remoteState.auth || {}),
+                passkeyRegistered: Boolean(status.passkeyRegistered),
+              },
+            };
+            setState(hydrated);
             setTheme(remoteState.theme || 'dark');
+            saveStore(hydrated);
           }
           setIsAuthenticated(true);
         } else {
@@ -142,29 +157,55 @@ export default function App() {
     setDeferredPrompt(null);
   };
 
+  const syncAuthenticatedState = async ({ username, displayName, remoteState, passkeyRegisteredValue = passkeyRegistered }) => {
+    const hydratedState = {
+      ...(remoteState || getStore()),
+      auth: {
+        ...(remoteState?.auth || {}),
+        username,
+        displayName: remoteState?.auth?.displayName || remoteState?.user?.name || displayName || username,
+        lastLoginAt: new Date().toISOString(),
+        rememberSession: true,
+        passkeyRegistered: passkeyRegisteredValue,
+      },
+    };
+    setState(hydratedState);
+    saveStore(hydratedState);
+    setTheme(hydratedState.theme || 'dark');
+    setIsAuthenticated(true);
+    setAuthBootstrapDone(true);
+  };
+
   const handleLogin = async ({ username, password }) => {
     setAuthLoading(true);
     setAuthError('');
     try {
-      await apiLogin({ username, password });
+      const result = await apiLogin({ username, password });
       const remoteState = await loadRemoteStore();
-      const hydratedState = {
-        ...(remoteState || getStore()),
-        auth: {
-          ...(remoteState?.auth || {}),
-          username,
-          displayName: remoteState?.auth?.displayName || remoteState?.user?.name || username,
-          lastLoginAt: new Date().toISOString(),
-          rememberSession: true,
-        },
-      };
-      setState(hydratedState);
-      saveStore(hydratedState);
-      setTheme(hydratedState.theme || 'dark');
-      setIsAuthenticated(true);
-      setAuthBootstrapDone(true);
+      setPasskeyRegistered(Boolean(result?.passkeyRegistered ?? passkeyRegistered));
+      await syncAuthenticatedState({ username, displayName: result?.user?.displayName || username, remoteState, passkeyRegisteredValue: Boolean(result?.passkeyRegistered ?? passkeyRegistered) });
     } catch (err) {
       setAuthError(err.message || 'Falha no login.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleFaceIdLogin = async () => {
+    setAuthLoading(true);
+    setAuthError('');
+    try {
+      const result = await loginWithFaceId();
+      setPasskeyRegistered(true);
+      const remoteState = await loadRemoteStore();
+      await syncAuthenticatedState({
+        username: result?.user?.username || state.auth?.username || state.user.handle || 'lipp',
+        displayName: result?.user?.displayName || state.auth?.displayName || state.user.name || 'Filipe',
+        remoteState,
+        passkeyRegisteredValue: true,
+      });
+    } catch (err) {
+      setAuthError(err.message || 'Falha no Face ID.');
     } finally {
       setAuthLoading(false);
     }
@@ -174,23 +215,10 @@ export default function App() {
     setAuthLoading(true);
     setAuthError('');
     try {
-      await bootstrapAccount({ username, displayName, password });
+      const result = await bootstrapAccount({ username, displayName, password });
+      setPasskeyRegistered(Boolean(result?.passkeyRegistered));
       const remoteState = await loadRemoteStore();
-      const hydratedState = {
-        ...(remoteState || getStore()),
-        auth: {
-          ...(remoteState?.auth || {}),
-          username,
-          displayName: remoteState?.auth?.displayName || remoteState?.user?.name || username,
-          lastLoginAt: new Date().toISOString(),
-          rememberSession: true,
-        },
-      };
-      setState(hydratedState);
-      saveStore(hydratedState);
-      setTheme(hydratedState.theme || 'dark');
-      setIsAuthenticated(true);
-      setAuthBootstrapDone(true);
+      await syncAuthenticatedState({ username, displayName, remoteState, passkeyRegisteredValue: Boolean(result?.passkeyRegistered ?? passkeyRegistered) });
     } catch (err) {
       setAuthError(err.message || 'Falha ao criar acesso.');
     } finally {
@@ -260,9 +288,12 @@ export default function App() {
           mode={authMode === 'setup' && !authBootstrapDone ? 'setup' : 'login'}
           isLoading={authLoading}
           errorMessage={authError}
+          defaultDisplayName={state.auth?.displayName || 'Filipe'}
+          canUseFaceId={faceIdSupported}
+          hasFaceId={passkeyRegistered}
           onLogin={handleLogin}
           onSetup={handleSetup}
-          onSwitchMode={null}
+          onFaceIdLogin={handleFaceIdLogin}
         />
       </div>
     );

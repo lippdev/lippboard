@@ -4,6 +4,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
+import {
+  generateAuthenticationOptions,
+  generateRegistrationOptions,
+  verifyAuthenticationResponse,
+  verifyRegistrationResponse,
+} from '@simplewebauthn/server';
+import { isoBase64URL } from '@simplewebauthn/server/helpers';
 import { createDefaultState } from '../src/services/defaultState.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,6 +22,8 @@ const DB_PATH = path.join(DB_DIR, 'lippboard.sqlite');
 const PORT = Number(process.env.PORT || process.env.LIPPBOARD_PORT || 4174);
 const COOKIE_NAME = 'lippboard_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
+const CHALLENGE_TTL_MS = 1000 * 60 * 5;
+const DEFAULT_DISPLAY_NAME = 'Filipe';
 
 if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
 
@@ -45,6 +54,26 @@ db.exec(`
     id INTEGER PRIMARY KEY CHECK(id = 1),
     payload TEXT NOT NULL,
     updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS webauthn_credentials (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    credential_id TEXT UNIQUE NOT NULL,
+    credential_public_key TEXT NOT NULL,
+    counter INTEGER NOT NULL DEFAULT 0,
+    transports TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS webauthn_challenges (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    purpose TEXT NOT NULL,
+    challenge TEXT NOT NULL,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL
   );
 `);
 
@@ -87,8 +116,15 @@ function parseCookies(header = '') {
   );
 }
 
-function isSecureRequest(req) {
-  return req.socket.encrypted || String(req.headers['x-forwarded-proto'] || '').includes('https');
+function getRequestOrigin(req) {
+  const proto = String(req.headers['x-forwarded-proto'] || (req.socket.encrypted ? 'https' : 'http')).split(',')[0].trim() || 'https';
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+  return `${proto}://${host}`;
+}
+
+function getRequestRpId(req) {
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+  return host.replace(/:\d+$/, '');
 }
 
 function setSessionCookie(res, token, req = null) {
@@ -99,7 +135,8 @@ function setSessionCookie(res, token, req = null) {
     'SameSite=Lax',
     `Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`,
   ];
-  if (process.env.NODE_ENV === 'production' || process.env.LIPPBOARD_COOKIE_SECURE === '1' || process.env.LIPPBOARD_COOKIE_SECURE === 'true' || (req && isSecureRequest(req))) {
+  const secureRequest = req && (req.socket.encrypted || String(req.headers['x-forwarded-proto'] || '').includes('https'));
+  if (process.env.NODE_ENV === 'production' || process.env.LIPPBOARD_COOKIE_SECURE === '1' || process.env.LIPPBOARD_COOKIE_SECURE === 'true' || secureRequest) {
     attrs.push('Secure');
   }
   res.setHeader('Set-Cookie', attrs.join('; '));
@@ -129,6 +166,10 @@ function normalizeUsername(value) {
 
 function getUserCount() {
   return db.prepare('SELECT COUNT(*) AS count FROM users').get().count;
+}
+
+function getPasskeyCount() {
+  return db.prepare('SELECT COUNT(*) AS count FROM webauthn_credentials').get().count;
 }
 
 function getSessionFromRequest(req) {
@@ -167,7 +208,7 @@ function readJsonBody(req) {
       if (!chunks.length) return resolve({});
       try {
         resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')));
-      } catch (err) {
+      } catch {
         reject(new Error('JSON inválido'));
       }
     });
@@ -199,17 +240,77 @@ function buildAuthPayload(req) {
   const session = getSessionFromRequest(req);
   const firstRun = getUserCount() === 0;
   if (!session) {
-    return { backendAvailable: true, authenticated: false, firstRun, user: null };
+    return {
+      backendAvailable: true,
+      authenticated: false,
+      firstRun,
+      passkeyRegistered: getPasskeyCount() > 0,
+      user: null,
+    };
   }
   return {
     backendAvailable: true,
     authenticated: true,
     firstRun: false,
+    passkeyRegistered: getPasskeyCount() > 0,
     user: {
       username: session.username,
       displayName: session.display_name,
     },
   };
+}
+
+function saveChallenge({ purpose, challenge, userId = null }) {
+  db.prepare('DELETE FROM webauthn_challenges WHERE purpose = ?').run(purpose);
+  db.prepare('INSERT INTO webauthn_challenges (purpose, challenge, user_id, created_at, expires_at) VALUES (?, ?, ?, ?, ?)').run(
+    purpose,
+    challenge,
+    userId,
+    nowIso(),
+    new Date(Date.now() + CHALLENGE_TTL_MS).toISOString(),
+  );
+}
+
+function consumeChallenge(purpose) {
+  const row = db.prepare('SELECT * FROM webauthn_challenges WHERE purpose = ? ORDER BY id DESC LIMIT 1').get(purpose);
+  if (!row) return null;
+  if (new Date(row.expires_at).getTime() < Date.now()) {
+    db.prepare('DELETE FROM webauthn_challenges WHERE id = ?').run(row.id);
+    return null;
+  }
+  db.prepare('DELETE FROM webauthn_challenges WHERE id = ?').run(row.id);
+  return row;
+}
+
+function findUserCredentials(userId) {
+  return db.prepare('SELECT * FROM webauthn_credentials WHERE user_id = ? ORDER BY id ASC').all(userId);
+}
+
+function findCredentialById(credentialId) {
+  return db.prepare('SELECT * FROM webauthn_credentials WHERE credential_id = ? LIMIT 1').get(credentialId);
+}
+
+function saveCredential(userId, credential) {
+  const now = nowIso();
+  const credentialId = isoBase64URL.fromBuffer(credential.credentialID);
+  const publicKey = isoBase64URL.fromBuffer(credential.credentialPublicKey);
+  const transports = JSON.stringify(credential.transports || []);
+  const existing = findCredentialById(credentialId);
+
+  if (existing) {
+    db.prepare(`
+      UPDATE webauthn_credentials
+      SET credential_public_key = ?, counter = ?, transports = ?, updated_at = ?
+      WHERE credential_id = ?
+    `).run(publicKey, credential.counter || 0, transports, now, credentialId);
+    return credentialId;
+  }
+
+  db.prepare(`
+    INSERT INTO webauthn_credentials (user_id, credential_id, credential_public_key, counter, transports, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(userId, credentialId, publicKey, credential.counter || 0, transports, now, now);
+  return credentialId;
 }
 
 function serveStatic(req, res) {
@@ -258,6 +359,7 @@ function serveStatic(req, res) {
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost');
+
     if (url.pathname === '/api/health' && req.method === 'GET') {
       return json(res, 200, { ok: true, database: true, userCount: getUserCount() });
     }
@@ -269,7 +371,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/auth/bootstrap' && req.method === 'POST') {
       const body = await readJsonBody(req);
       const username = normalizeUsername(body.username);
-      const displayName = String(body.displayName || body.username || '').trim();
+      const displayName = String(body.displayName || DEFAULT_DISPLAY_NAME || body.username || '').trim();
       const password = String(body.password || '');
 
       if (getUserCount() > 0) {
@@ -326,6 +428,118 @@ const server = http.createServer(async (req, res) => {
       if (session) db.prepare('DELETE FROM sessions WHERE id = ?').run(session.id);
       clearSessionCookie(res);
       return json(res, 200, { ok: true });
+    }
+
+    if (url.pathname === '/api/auth/webauthn/register/options' && req.method === 'POST') {
+      const session = getSessionFromRequest(req);
+      if (!session) return json(res, 401, { error: 'Não autenticado.' });
+      const user = db.prepare('SELECT id, username, display_name FROM users WHERE id = ?').get(session.user_id);
+      if (!user) return json(res, 404, { error: 'Usuário não encontrado.' });
+
+      const existingCredentials = findUserCredentials(user.id);
+      const options = await generateRegistrationOptions({
+        rpName: 'Lipp Board',
+        rpID: getRequestRpId(req),
+        userID: isoBase64URL.toBuffer(String(user.id)),
+        userName: user.username,
+        userDisplayName: user.display_name,
+        attestationType: 'none',
+        authenticatorSelection: {
+          authenticatorAttachment: 'platform',
+          residentKey: 'required',
+          userVerification: 'required',
+        },
+        excludeCredentials: existingCredentials.map((credential) => ({
+          id: isoBase64URL.toBuffer(credential.credential_id),
+          type: 'public-key',
+          transports: JSON.parse(credential.transports || '[]'),
+        })),
+        supportedAlgorithmIDs: [-7, -257],
+      });
+
+      saveChallenge({ purpose: 'register', challenge: options.challenge, userId: user.id });
+      return json(res, 200, { ok: true, options });
+    }
+
+    if (url.pathname === '/api/auth/webauthn/register/verify' && req.method === 'POST') {
+      const session = getSessionFromRequest(req);
+      if (!session) return json(res, 401, { error: 'Não autenticado.' });
+      const challengeRow = consumeChallenge('register');
+      if (!challengeRow) return json(res, 400, { error: 'Desafio de cadastro expirado.' });
+      const body = await readJsonBody(req);
+      const response = body.attestationResponse || body.response || body;
+      const verification = await verifyRegistrationResponse({
+        response,
+        expectedChallenge: challengeRow.challenge,
+        expectedOrigin: getRequestOrigin(req),
+        expectedRPID: getRequestRpId(req),
+        requireUserVerification: true,
+      });
+
+      if (!verification.verified || !verification.registrationInfo) {
+        return json(res, 400, { error: 'Não foi possível verificar o Face ID.' });
+      }
+
+      const credentialId = saveCredential(session.user_id, {
+        credentialID: verification.registrationInfo.credential.id,
+        credentialPublicKey: verification.registrationInfo.credential.publicKey,
+        counter: verification.registrationInfo.credential.counter,
+        transports: response.response?.transports || response.transports || [],
+      });
+
+      return json(res, 200, { ok: true, credentialId });
+    }
+
+    if (url.pathname === '/api/auth/webauthn/login/options' && req.method === 'POST') {
+      if (getPasskeyCount() === 0) {
+        return json(res, 404, { error: 'Nenhum Face ID cadastrado.' });
+      }
+      const options = await generateAuthenticationOptions({
+        rpID: getRequestRpId(req),
+        userVerification: 'required',
+      });
+      saveChallenge({ purpose: 'login', challenge: options.challenge });
+      return json(res, 200, { ok: true, options });
+    }
+
+    if (url.pathname === '/api/auth/webauthn/login/verify' && req.method === 'POST') {
+      const challengeRow = consumeChallenge('login');
+      if (!challengeRow) return json(res, 400, { error: 'Desafio de Face ID expirado.' });
+      const body = await readJsonBody(req);
+      const response = body.authenticationResponse || body.response || body;
+      const credentialId = response.id || body.credentialId || body.credentialID;
+      const credential = findCredentialById(credentialId);
+      if (!credential) {
+        return json(res, 404, { error: 'Credencial de Face ID não encontrada.' });
+      }
+
+      const verification = await verifyAuthenticationResponse({
+        response,
+        expectedChallenge: challengeRow.challenge,
+        expectedOrigin: getRequestOrigin(req),
+        expectedRPID: getRequestRpId(req),
+        credential: {
+          id: credential.credential_id,
+          publicKey: isoBase64URL.toBuffer(credential.credential_public_key),
+          counter: credential.counter,
+          transports: JSON.parse(credential.transports || '[]'),
+        },
+        requireUserVerification: true,
+      });
+
+      if (!verification.verified) {
+        return json(res, 401, { error: 'Face ID inválido.' });
+      }
+
+      db.prepare('UPDATE webauthn_credentials SET counter = ?, updated_at = ? WHERE id = ?').run(
+        verification.authenticationInfo.newCounter,
+        nowIso(),
+        credential.id,
+      );
+      const user = db.prepare('SELECT id, username, display_name FROM users WHERE id = ?').get(credential.user_id);
+      const token = createSession(user.id);
+      setSessionCookie(res, token, req);
+      return json(res, 200, { ok: true, user: { username: user.username, displayName: user.display_name } });
     }
 
     if (url.pathname === '/api/state' && req.method === 'GET') {

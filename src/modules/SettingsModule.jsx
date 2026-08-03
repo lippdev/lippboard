@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Sun, Moon, Download, Key, RefreshCw, CheckCircle, User, Lock, Shield } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Sun, Moon, Download, Key, RefreshCw, CheckCircle, User, Lock, Shield, Fingerprint } from 'lucide-react';
 import { saveStore, clearStore } from '../services/store.js';
 import { clearPwaCache } from '../services/pwaService.js';
 import { changePassword, resetRemoteState } from '../services/backendService.js';
+import { isFaceIdAvailable, registerFaceId } from '../services/passkeyService.js';
 
 export default function SettingsModule({ state, setState, theme, setTheme, isPwaInstalled, onInstallPwa }) {
   const [token, setToken] = useState(state.user.githubToken || '');
@@ -12,15 +13,19 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
   const [avatar, setAvatar] = useState(state.user.avatar || '');
   const [savedMsg, setSavedMsg] = useState('');
   const [profileMsg, setProfileMsg] = useState('');
-
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordMsg, setPasswordMsg] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [faceIdMsg, setFaceIdMsg] = useState('');
+  const [faceIdError, setFaceIdError] = useState('');
+  const [faceIdSupported, setFaceIdSupported] = useState(false);
+  const [faceIdBusy, setFaceIdBusy] = useState(false);
 
-  const activeName = state.auth?.displayName || state.user.name || 'Administrador';
-  const activeHandle = state.auth?.username || state.user.handle || '—';
+  const displayName = state.auth?.displayName || state.user.name || 'Filipe';
+  const username = state.auth?.username || state.user.handle || 'lipp';
+  const passkeyRegistered = Boolean(state.auth?.passkeyRegistered);
 
   const pageChecklist = [
     ['Início', 'Layout ajustado'],
@@ -33,8 +38,30 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
     ['Arquivos', 'Links e uploads'],
     ['Humor', 'Entrada simples'],
     ['Ponte IA', 'Comandos e histórico'],
-    ['Configurações', 'Perfil, acesso e tema'],
+    ['Configurações', 'Perfil, acesso, Face ID e tema'],
   ];
+
+  useEffect(() => {
+    let mounted = true;
+    isFaceIdAvailable() && Promise.resolve().then(() => {
+      if (mounted) setFaceIdSupported(true);
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  const syncAuthFlags = (next) => {
+    const updated = {
+      ...state,
+      auth: {
+        ...(state.auth || {}),
+        passkeyRegistered,
+      },
+      ...next,
+    };
+    setState(updated);
+    saveStore(updated);
+    return updated;
+  };
 
   const handleSaveToken = (e) => {
     e.preventDefault();
@@ -96,6 +123,30 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
     }
   };
 
+  const handleRegisterFaceId = async () => {
+    setFaceIdMsg('');
+    setFaceIdError('');
+    setFaceIdBusy(true);
+    try {
+      await registerFaceId();
+      const updated = {
+        ...state,
+        auth: {
+          ...(state.auth || {}),
+          passkeyRegistered: true,
+        },
+      };
+      setState(updated);
+      saveStore(updated);
+      setFaceIdMsg('Face ID cadastrado com sucesso. Agora você pode entrar sem digitar senha.');
+      setTimeout(() => setFaceIdMsg(''), 4000);
+    } catch (err) {
+      setFaceIdError(err.message || 'Não foi possível cadastrar o Face ID.');
+    } finally {
+      setFaceIdBusy(false);
+    }
+  };
+
   const handleResetData = async () => {
     if (window.confirm('Deseja realmente restaurar os dados originais do Lipp Board?')) {
       clearStore();
@@ -108,7 +159,7 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
     <div className="module-page">
       <div className="page-header">
         <h1 className="page-title">Configurações do Sistema</h1>
-        <p className="page-subtitle">Perfil, acesso, aparência e manutenção do Lipp Board em um só lugar.</p>
+        <p className="page-subtitle">Perfil, acesso, Face ID, aparência e manutenção do Lipp Board em um só lugar.</p>
       </div>
 
       <div className="card" style={{ marginBottom: '20px' }}>
@@ -133,25 +184,21 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
             Perfil principal
           </h3>
           <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px' }}>
-            Ajuste os dados exibidos no painel. O acesso do app continua separado e protegido pelo backend.
+            Ajuste os dados exibidos no painel. O login principal fica separado e protegido pelo backend.
           </p>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px', padding: '14px', borderRadius: '16px', background: 'var(--bg-elevated)', border: '1px solid var(--border-color)' }}>
             <div style={{ width: '52px', height: '52px', borderRadius: '16px', display: 'grid', placeItems: 'center', background: 'linear-gradient(180deg, rgba(59,130,246,.24), rgba(15,23,42,.96))', color: 'white', fontWeight: 800, fontSize: '18px' }}>
-              {(activeName || 'L').charAt(0).toUpperCase()}
+              {displayName.charAt(0).toUpperCase()}
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{activeName}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>@{activeHandle}</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{displayName}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>@{username}</div>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Conta principal do Lipp Board</div>
             </div>
           </div>
 
-          {profileMsg && (
-            <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--success-bg)', color: 'var(--success)', fontSize: '12.5px', marginBottom: '12px' }}>
-              {profileMsg}
-            </div>
-          )}
+          {profileMsg && <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--success-bg)', color: 'var(--success)', fontSize: '12.5px', marginBottom: '12px' }}>{profileMsg}</div>}
 
           <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div className="module-form-grid module-form-grid--2">
@@ -188,19 +235,11 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
             Acesso e senha
           </h3>
           <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px' }}>
-            Troque a senha do login sem mexer nos dados do app.
+            Troque a senha do login ou ajuste a entrada do app sem mexer nos dados salvos.
           </p>
 
-          {passwordMsg && (
-            <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--success-bg)', color: 'var(--success)', fontSize: '12.5px', marginBottom: '12px' }}>
-              {passwordMsg}
-            </div>
-          )}
-          {passwordError && (
-            <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontSize: '12.5px', marginBottom: '12px' }}>
-              {passwordError}
-            </div>
-          )}
+          {passwordMsg && <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--success-bg)', color: 'var(--success)', fontSize: '12.5px', marginBottom: '12px' }}>{passwordMsg}</div>}
+          {passwordError && <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontSize: '12.5px', marginBottom: '12px' }}>{passwordError}</div>}
 
           <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div className="module-form-grid module-form-grid--3">
@@ -212,6 +251,44 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
               <button type="submit" className="topbar-btn btn-primary">Atualizar senha</button>
             </div>
           </form>
+        </div>
+
+        <div className="card">
+          <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Fingerprint size={18} color="var(--accent-primary)" />
+            Face ID / Biometria do iPhone
+          </h3>
+          <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px' }}>
+            Cadastre um passkey no seu iPhone para entrar sem digitar usuário e senha. O desbloqueio usa Face ID / Touch ID nativo.
+          </p>
+
+          {faceIdMsg && <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--success-bg)', color: 'var(--success)', fontSize: '12.5px', marginBottom: '12px' }}>{faceIdMsg}</div>}
+          {faceIdError && <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontSize: '12.5px', marginBottom: '12px' }}>{faceIdError}</div>}
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 0', borderBottom: '1px solid var(--border-color)' }}>
+            <div>
+              <h4 style={{ fontSize: '14px', fontWeight: '600' }}>Status do Face ID</h4>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                {passkeyRegistered ? 'Já existe um Face ID cadastrado para este usuário.' : 'Nenhum Face ID cadastrado ainda.'}
+              </p>
+            </div>
+            <span style={{ fontSize: '12px', color: passkeyRegistered ? 'var(--success)' : 'var(--text-muted)', fontWeight: 700 }}>
+              {passkeyRegistered ? 'Ativo' : 'Desativado'}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 0' }}>
+            <div>
+              <h4 style={{ fontSize: '14px', fontWeight: '600' }}>Cadastrar Face ID neste iPhone</h4>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                Depois de cadastrar, você poderá tocar em “Entrar com Face ID” na tela de login.
+              </p>
+            </div>
+            <button className="topbar-btn btn-primary" onClick={handleRegisterFaceId} disabled={!faceIdSupported || faceIdBusy}>
+              <Fingerprint size={16} />
+              <span>{faceIdBusy ? 'Cadastrando...' : passkeyRegistered ? 'Recadastrar Face ID' : 'Cadastrar Face ID'}</span>
+            </button>
+          </div>
         </div>
 
         <div className="card">
@@ -258,11 +335,7 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
             Opcional: insira seu Personal Access Token para carregar repositórios, commits e PRs diretamente.
           </p>
 
-          {savedMsg && (
-            <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--success-bg)', color: 'var(--success)', fontSize: '12.5px', marginBottom: '12px' }}>
-              {savedMsg}
-            </div>
-          )}
+          {savedMsg && <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--success-bg)', color: 'var(--success)', fontSize: '12.5px', marginBottom: '12px' }}>{savedMsg}</div>}
 
           <form onSubmit={handleSaveToken} style={{ display: 'flex', gap: '10px' }}>
             <input

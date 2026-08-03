@@ -31,6 +31,7 @@ export async function getAuthStatus() {
       backendAvailable: false,
       authenticated: false,
       firstRun: false,
+      passkeyRegistered: false,
       error: err.message,
     };
   }
@@ -50,6 +51,13 @@ export async function login({ username, password }) {
   });
 }
 
+export async function logout() {
+  try {
+    return await request('/auth/logout', { method: 'POST' });
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
 
 export async function changePassword({ currentPassword, newPassword }) {
   return request('/auth/password', {
@@ -58,12 +66,26 @@ export async function changePassword({ currentPassword, newPassword }) {
   });
 }
 
-export async function logout() {
-  try {
-    return await request('/auth/logout', { method: 'POST' });
-  } catch (err) {
-    return { ok: false, error: err.message };
-  }
+export async function beginPasskeyRegistration() {
+  return request('/auth/webauthn/register/options', { method: 'POST' });
+}
+
+export async function completePasskeyRegistration(attestationResponse) {
+  return request('/auth/webauthn/register/verify', {
+    method: 'POST',
+    body: JSON.stringify({ attestationResponse }),
+  });
+}
+
+export async function beginPasskeyLogin() {
+  return request('/auth/webauthn/login/options', { method: 'POST' });
+}
+
+export async function completePasskeyLogin(authenticationResponse) {
+  return request('/auth/webauthn/login/verify', {
+    method: 'POST',
+    body: JSON.stringify({ authenticationResponse }),
+  });
 }
 
 export async function fetchRemoteState() {
