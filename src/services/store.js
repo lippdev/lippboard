@@ -55,13 +55,19 @@ export const getStore = () => {
     }
 
     const parsed = JSON.parse(saved);
+    const legacySecurity = parsed.security || {};
+    const migratedSecurity = {
+      ...DEFAULT_STATE.security,
+      ...legacySecurity,
+      passwordHash: legacySecurity.passwordHash || legacySecurity.pinHash || DEFAULT_STATE.security.passwordHash,
+      passwordSalt: legacySecurity.passwordSalt || DEFAULT_STATE.security.passwordSalt,
+      enabled: Boolean(legacySecurity.enabled && (legacySecurity.passwordHash || legacySecurity.pinHash)),
+    };
+
     return {
       ...DEFAULT_STATE,
       ...parsed,
-      security: {
-        ...DEFAULT_STATE.security,
-        ...(parsed.security || {})
-      },
+      security: migratedSecurity,
       github: {
         ...DEFAULT_STATE.github,
         ...(parsed.github || {})

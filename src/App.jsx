@@ -32,7 +32,7 @@ export default function App() {
   const [isPwaInstalled, setIsPwaInstalled] = useState(false);
 
   // Estado de bloqueio inicial do aplicativo baseada em sessão
-  const isSecurityConfigured = Boolean(state.security?.enabled && state.security?.passwordHash);
+  const isSecurityConfigured = Boolean(state.security?.enabled && (state.security?.passwordHash || state.security?.pinHash));
   const [isLocked, setIsLocked] = useState(() => Boolean(state.security?.enabled && state.security?.passwordHash));
 
   // Aplica tema ao atributo root
@@ -53,9 +53,9 @@ export default function App() {
 
   // Se o usuário desativar a segurança, desbloqueia; se ativar, volta a exigir autenticação
   useEffect(() => {
-    const securityEnabled = Boolean(state.security?.enabled && state.security?.passwordHash);
+    const securityEnabled = Boolean(state.security?.enabled && (state.security?.passwordHash || state.security?.pinHash));
     setIsLocked(securityEnabled);
-  }, [state.security?.enabled, state.security?.passwordHash]);
+  }, [state.security?.enabled, state.security?.passwordHash, state.security?.pinHash]);
 
   const handleUnlock = () => {
     setIsLocked(false);

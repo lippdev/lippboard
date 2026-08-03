@@ -3,13 +3,15 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import { APP_VERSION, syncAppVersion } from './services/pwaService.js'
 
-syncAppVersion();
+(async () => {
+  await syncAppVersion();
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  );
+})();
 
 // Registra Service Worker para PWA Offline
 if ('serviceWorker' in navigator) {

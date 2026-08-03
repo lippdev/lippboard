@@ -34,12 +34,15 @@ export async function clearPwaCache({ reload = false } = {}) {
   }
 }
 
-export function syncAppVersion() {
-  if (typeof window === 'undefined') return;
+export async function syncAppVersion() {
+  if (typeof window === 'undefined') return false;
   const storedVersion = localStorage.getItem(APP_BUILD_KEY);
   if (storedVersion !== APP_VERSION) {
     localStorage.setItem(APP_BUILD_KEY, APP_VERSION);
+    await clearPwaCache({ reload: false });
+    return true;
   }
+  return false;
 }
 
 export { APP_VERSION, APP_BUILD_KEY };

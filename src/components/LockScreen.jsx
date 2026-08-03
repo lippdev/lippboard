@@ -12,7 +12,7 @@ export default function LockScreen({ securityConfig, userProfile, onUnlock }) {
 
   const handlePasswordSubmit = useCallback(async (currentPassword) => {
     if (!currentPassword) return;
-    const isValid = await verifyPassword(currentPassword, securityConfig.passwordHash, securityConfig.passwordSalt);
+    const isValid = await verifyPassword(currentPassword, securityConfig.passwordHash || securityConfig.pinHash, securityConfig.passwordSalt || '');
     if (isValid) {
       onUnlock();
       return;
@@ -22,7 +22,7 @@ export default function LockScreen({ securityConfig, userProfile, onUnlock }) {
     setErrorMsg('Senha de segurança incorreta.');
     setPasswordInput('');
     setTimeout(() => setIsShaking(false), 500);
-  }, [securityConfig.passwordHash, securityConfig.passwordSalt, onUnlock]);
+  }, [securityConfig.passwordHash, securityConfig.pinHash, securityConfig.passwordSalt, onUnlock]);
 
   const handleBiometricAuth = useCallback(async ({ manual = false } = {}) => {
     if (!securityConfig.biometricsEnabled || !isWebAuthnAvailable()) {
