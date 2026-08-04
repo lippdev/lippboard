@@ -440,7 +440,7 @@ const server = http.createServer(async (req, res) => {
       const options = await generateRegistrationOptions({
         rpName: 'Lipp Board',
         rpID: getRequestRpId(req),
-        userID: isoBase64URL.toBuffer(String(user.id)),
+        userID: new TextEncoder().encode(`lippboard-user-${user.id}`),
         userName: user.username,
         userDisplayName: user.display_name,
         attestationType: 'none',
