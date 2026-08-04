@@ -39,6 +39,7 @@ export default function App() {
   const [authBootstrapDone, setAuthBootstrapDone] = useState(false);
   const [faceIdSupported, setFaceIdSupported] = useState(false);
   const [passkeyRegistered, setPasskeyRegistered] = useState(false);
+  const [autoFaceIdAttempted, setAutoFaceIdAttempted] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -146,6 +147,20 @@ export default function App() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (
+      !authLoading &&
+      !isAuthenticated &&
+      !autoFaceIdAttempted &&
+      authMode === 'login' &&
+      passkeyRegistered &&
+      faceIdSupported
+    ) {
+      setAutoFaceIdAttempted(true);
+      handleFaceIdLogin();
+    }
+  }, [authLoading, isAuthenticated, authMode, autoFaceIdAttempted, passkeyRegistered, faceIdSupported]);
 
   const handleInstallPwa = async () => {
     if (!deferredPrompt) return;

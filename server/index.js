@@ -78,6 +78,8 @@ db.exec(`
 `);
 
 const defaultState = createDefaultState();
+db.prepare("DELETE FROM webauthn_credentials WHERE credential_id IS NULL OR credential_id = ''").run();
+
 const existingState = db.prepare('SELECT payload FROM app_state WHERE id = 1').get();
 if (!existingState) {
   db.prepare('INSERT INTO app_state (id, payload, updated_at) VALUES (1, ?, ?)')
@@ -169,7 +171,7 @@ function getUserCount() {
 }
 
 function getPasskeyCount() {
-  return db.prepare('SELECT COUNT(*) AS count FROM webauthn_credentials').get().count;
+  return db.prepare("SELECT COUNT(*) AS count FROM webauthn_credentials WHERE credential_id IS NOT NULL AND credential_id <> ''").get().count;
 }
 
 function getSessionFromRequest(req) {

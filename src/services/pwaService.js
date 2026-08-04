@@ -1,4 +1,4 @@
-const APP_VERSION = '2026-08-03-5';
+const APP_VERSION = '2026-08-04-1';
 const APP_CACHE_PREFIX = 'lippboard-shell-';
 const APP_BUILD_KEY = 'lippboard_app_version';
 

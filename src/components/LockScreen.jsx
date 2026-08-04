@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowRight, BadgeCheck, Eye, EyeOff, KeyRound, LogIn, Lock, Sparkles, ShieldCheck, UserPlus } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Eye, EyeOff, Fingerprint, KeyRound, LogIn, Lock, Sparkles, ShieldCheck, UserPlus } from 'lucide-react';
 
 export default function LockScreen({
   mode = 'login',
@@ -20,6 +20,8 @@ export default function LockScreen({
   const [localError, setLocalError] = useState('');
 
   const isSetupMode = mode === 'setup';
+  const hasQuickFaceId = !isSetupMode && canUseFaceId && hasFaceId && typeof onFaceIdLogin === 'function';
+
   const headline = useMemo(
     () => (isSetupMode ? 'Criar acesso do Lipp Board' : 'Entrar no Lipp Board'),
     [isSetupMode]
@@ -29,10 +31,11 @@ export default function LockScreen({
     if (isSetupMode) {
       return 'Crie o primeiro usuário administrador. Depois disso, o acesso passa a ser feito com login comum, sessão no banco e Face ID opcional.';
     }
-    return hasFaceId
-      ? 'Entre com usuário e senha ou toque em Face ID para usar o desbloqueio biométrico neste iPhone.'
+
+    return hasQuickFaceId
+      ? 'Seu Face ID já está pronto. Toque no botão biométrico para entrar sem digitar senha.'
       : 'Use seu usuário e senha para entrar. Depois você pode cadastrar Face ID nas configurações.';
-  }, [hasFaceId, isSetupMode]);
+  }, [hasQuickFaceId, isSetupMode]);
 
   const submitLabel = isSetupMode ? 'Criar conta e entrar' : 'Entrar';
   const submitIcon = isSetupMode ? <UserPlus size={16} /> : <LogIn size={16} />;
@@ -63,6 +66,7 @@ export default function LockScreen({
         setLocalError('A senha e a confirmação não conferem.');
         return;
       }
+
       await onSetup?.({
         username: normalizedUsername,
         displayName: normalizedDisplayName,
@@ -106,10 +110,25 @@ export default function LockScreen({
             </div>
             <div>
               <span className="auth-summary-label">Autenticação</span>
-              <strong>{hasFaceId ? 'Senha + Face ID' : 'Senha + sessão no servidor'}</strong>
+              <strong>{hasQuickFaceId ? 'Face ID + senha' : 'Senha + sessão no servidor'}</strong>
             </div>
           </div>
         </div>
+
+        {!isSetupMode && hasQuickFaceId && (
+          <div className="auth-faceid-panel">
+            <button
+              type="button"
+              className="topbar-btn btn-primary auth-faceid-btn"
+              onClick={onFaceIdLogin}
+              disabled={isLoading}
+            >
+              <Fingerprint size={18} />
+              <span>{isLoading ? 'Abrindo Face ID...' : 'Entrar com Face ID'}</span>
+            </button>
+            <p className="auth-faceid-copy">Use a biometria para entrar instantaneamente. A senha continua disponível como fallback.</p>
+          </div>
+        )}
 
         <form className="lockscreen-password-form auth-form" onSubmit={handleSubmit}>
           {isSetupMode && (
@@ -188,18 +207,6 @@ export default function LockScreen({
             <span>{isLoading ? 'Processando...' : submitLabel}</span>
             {!isLoading && <ArrowRight size={15} />}
           </button>
-
-          {!isSetupMode && canUseFaceId && hasFaceId && onFaceIdLogin && (
-            <button
-              type="button"
-              className="topbar-btn lockscreen-fallback-btn auth-switch"
-              onClick={onFaceIdLogin}
-              disabled={isLoading}
-            >
-              <ShieldCheck size={16} />
-              <span>Entrar com Face ID</span>
-            </button>
-          )}
         </form>
 
         {(localError || errorMessage) && (

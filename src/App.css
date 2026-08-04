@@ -531,8 +531,32 @@
   justify-content: center;
 }
 
+.auth-faceid-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.auth-faceid-btn {
+  width: 100%;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  border-radius: 16px;
+}
+
+.auth-faceid-copy {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+  color: var(--text-muted);
+}
 
 .auth-pill-row {
+
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
