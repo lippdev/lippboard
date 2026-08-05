@@ -710,6 +710,22 @@
   gap: 14px;
 }
 
+.task-card[data-status='a_fazer'] {
+  background: color-mix(in srgb, var(--info-bg) 22%, var(--bg-input));
+  border-color: color-mix(in srgb, var(--info) 30%, var(--border-color));
+}
+
+.task-card[data-status='feita'] {
+  background: color-mix(in srgb, var(--success-bg) 22%, var(--bg-input));
+  border-color: color-mix(in srgb, var(--success) 30%, var(--border-color));
+}
+
+.task-card[data-status='cancelada'] {
+  background: color-mix(in srgb, var(--danger-bg) 22%, var(--bg-input));
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border-color));
+  opacity: 0.9;
+}
+
 .task-card__main,
 .task-card__actions {
   display: flex;

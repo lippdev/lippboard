@@ -143,7 +143,7 @@ export default function TasksModule({ state, setState }) {
           {state.tasks.map((t) => {
             const meta = getTaskStatusMeta(t.status);
             return (
-              <div key={t.id} className="task-card">
+              <div key={t.id} className="task-card" data-status={normalizeTaskStatus(t.status)}>
                 <div className="task-card__main">
                   <div>
                     <h4 className="task-card__title">{t.title}</h4>
