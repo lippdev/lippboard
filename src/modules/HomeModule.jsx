@@ -4,7 +4,6 @@ import {
   Languages, 
   GitPullRequest, 
   Smile, 
-  Bot, 
   ArrowRight,
   Flame
 } from 'lucide-react';
@@ -21,8 +20,8 @@ export default function HomeModule({ state, setActiveModule, onOpenDrawer }) {
           <p className="page-subtitle">Bem-vindo ao seu Lipp Board webOS. Aqui está o resumo do seu dia.</p>
         </div>
         <button className="topbar-btn btn-primary" onClick={onOpenDrawer}>
-          <Bot size={16} />
-          <span>Comando IA Subagente</span>
+          <ArrowRight size={16} />
+          <span>Abrir ponte do subagente</span>
         </button>
       </div>
 

@@ -368,7 +368,6 @@ export default function App() {
       <MobileDock
         activeModule={activeModule}
         setActiveModule={setActiveModule}
-        onOpenDrawer={() => setDrawerOpen(true)}
         onOpenMenu={() => setSidebarOpen((prev) => !prev)}
       />
     </div>

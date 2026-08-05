@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Home, CheckSquare, GitPullRequest, Bot } from 'lucide-react';
+import { Menu, Home, CheckSquare, GitPullRequest } from 'lucide-react';
 
 const items = [
   { id: 'home', label: 'Início', icon: Home },
@@ -7,7 +7,7 @@ const items = [
   { id: 'github', label: 'GitHub', icon: GitPullRequest },
 ];
 
-export default function MobileDock({ activeModule, setActiveModule, onOpenDrawer, onOpenMenu }) {
+export default function MobileDock({ activeModule, setActiveModule, onOpenMenu }) {
   return (
     <>
       <nav className="mobile-dock" aria-label="Navegação rápida">
@@ -35,16 +35,6 @@ export default function MobileDock({ activeModule, setActiveModule, onOpenDrawer
           </button>
         ))}
       </nav>
-
-      <button
-        type="button"
-        className="mobile-dock-fab"
-        onClick={onOpenDrawer}
-        aria-label="Abrir comando de IA"
-        title="Comando IA"
-      >
-        <Bot size={20} />
-      </button>
     </>
   );
 }
