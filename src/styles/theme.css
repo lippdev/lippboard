@@ -1,6 +1,12 @@
 /* Lipp Board - Theme & Design System (PT-BR) */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
+@font-face {
+  font-family: 'Berserker';
+  src: url('/fonts/Berserker.ttf') format('truetype');
+  font-display: swap;
+}
+
 :root {
   /* Metal iOS dark theme */
   --bg-primary: #05070b;
@@ -42,6 +48,7 @@
   --shadow-lg: 0 14px 32px -8px rgba(0, 0, 0, 0.62), 0 4px 10px -4px rgba(255, 255, 255, 0.04);
 
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Berserker', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
   
   --radius-sm: 6px;
@@ -1007,3 +1014,42 @@ html.app-locked, body.app-locked {
   position: relative;
   overflow: hidden;
 }
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4.2vw, 3.4rem);
+  line-height: 0.92;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.sidebar-brand-text span:first-child,
+.nav-section-title,
+.card h3,
+.topbar-btn.btn-primary,
+.task-status-pill,
+.page-check-item--status strong {
+  font-family: var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sidebar-brand-text span:first-child {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.nav-section-title,
+.card h3 {
+  font-size: 0.88rem;
+}
+
+.topbar-btn.btn-primary {
+  font-size: 0.82rem;
+}
+
+.task-status-pill,
+.page-check-item--status strong {
+  font-size: 0.8rem;
+}
+
