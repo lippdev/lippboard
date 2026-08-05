@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./public/favicon.svg" alt="Lipp Board" width="96" height="96" />
+</p>
+
 # Lipp Board
 
 Lipp Board is an **open-source personal PWA** built for daily use on desktop and mobile, with a strong focus on:
