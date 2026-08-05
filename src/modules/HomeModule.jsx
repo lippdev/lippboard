@@ -57,7 +57,7 @@ export default function HomeModule({ state, setActiveModule, onOpenDrawer }) {
           </div>
         </div>
 
-        {/* Card GitHub @lippdev */}
+        {/* Card GitHub */}
         <div className="card" onClick={() => setActiveModule('github')} style={{ cursor: 'pointer' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
             <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)' }}>GITHUB @LIPPDEV</span>
@@ -124,7 +124,7 @@ export default function HomeModule({ state, setActiveModule, onOpenDrawer }) {
           </div>
         </div>
 
-        {/* PRs do GitHub Recentes (@lippdev) */}
+        {/* PRs do GitHub Recentes */}
         <div className="card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: '700' }}>Atividade GitHub Recente</h3>

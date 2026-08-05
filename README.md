@@ -101,7 +101,13 @@ npm install
 npm start
 ```
 
-### 3) Open the app
+### 3) Run the smoke check
+
+```bash
+npm test
+```
+
+### 4) Open the app
 
 - Local default: `http://localhost:4174`
 - Production / deployed URL: your domain or reverse proxy
@@ -159,10 +165,12 @@ This starts the Vite frontend for development.
 ```bash
 npm run build
 npm start
+npm test
 ```
 
 - `npm run build` generates the production PWA bundle
 - `npm start` runs the SQLite-backed server that serves the built app
+- `npm test` runs a small smoke check against the server
 
 ## Environment notes
 
@@ -170,6 +178,7 @@ The server listens on:
 
 - `PORT`
 - or `LIPPBOARD_PORT`
+- optional `LIPPBOARD_DB_PATH` for a custom SQLite file path
 - default: `4174`
 
 Useful production notes:

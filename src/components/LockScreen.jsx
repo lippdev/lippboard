@@ -5,7 +5,7 @@ export default function LockScreen({
   mode = 'login',
   isLoading = false,
   errorMessage = '',
-  defaultDisplayName = 'Filipe',
+  defaultDisplayName = 'Seu nome',
   canUseFaceId = false,
   hasFaceId = false,
   onLogin,
@@ -138,7 +138,7 @@ export default function LockScreen({
                 type="text"
                 value={displayName}
                 onChange={(e) => { setLocalError(''); setDisplayName(e.target.value); }}
-                placeholder="Ex.: Filipe"
+                placeholder="Ex.: Seu nome"
                 autoComplete="name"
                 className="lockscreen-password-input"
               />
@@ -151,7 +151,7 @@ export default function LockScreen({
               type="text"
               value={username}
               onChange={(e) => { setLocalError(''); setUsername(e.target.value); }}
-              placeholder="ex.: lipp"
+              placeholder="ex.: seu-usuario"
               autoComplete="username"
               autoCapitalize="none"
               autoCorrect="off"

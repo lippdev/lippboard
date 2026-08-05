@@ -7,7 +7,7 @@ const LEGACY_STORAGE_KEYS = ['lippboard_pwa_data_v1', 'lippboard_pwa_data_v2', '
 
 
 const stripDeprecatedFields = (state) => {
-  const { security, ...rest } = state || {};
+  const { security: _security, ...rest } = state || {};
   return rest;
 };
 

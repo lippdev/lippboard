@@ -41,7 +41,7 @@ export const createDefaultState = () => ({
   },
   auth: {
     username: '',
-    displayName: 'Filipe',
+    displayName: '',
     lastLoginAt: '',
     rememberSession: true,
     passkeyRegistered: false

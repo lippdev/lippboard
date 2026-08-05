@@ -15,7 +15,6 @@ import {
   Bot, 
   Settings,
   Search,
-  X,
   ChevronLeft,
   Sparkles
 } from 'lucide-react';

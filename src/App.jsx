@@ -150,9 +150,27 @@ export default function App() {
       faceIdSupported
     ) {
       setAutoFaceIdAttempted(true);
-      handleFaceIdLogin();
+      void (async () => {
+        setAuthLoading(true);
+        setAuthError('');
+        try {
+          const result = await loginWithFaceId();
+          setPasskeyRegistered(true);
+          const remoteState = await loadRemoteStore();
+          await syncAuthenticatedState({
+            username: result?.user?.username || state.auth?.username || state.user.handle || 'seu-usuario',
+            displayName: result?.user?.displayName || state.auth?.displayName || state.user.name || 'Seu nome',
+            remoteState,
+            passkeyRegisteredValue: true,
+          });
+        } catch (err) {
+          setAuthError(err.message || 'Falha no Face ID.');
+        } finally {
+          setAuthLoading(false);
+        }
+      })();
     }
-  }, [authLoading, isAuthenticated, authMode, autoFaceIdAttempted, passkeyRegistered, faceIdSupported]);
+  }, [authLoading, isAuthenticated, authMode, autoFaceIdAttempted, passkeyRegistered, faceIdSupported, state.auth?.displayName, state.auth?.username, state.user.handle, state.user.name]);
 
   const handleInstallPwa = async () => {
     if (!deferredPrompt) return;
@@ -206,8 +224,8 @@ export default function App() {
       setPasskeyRegistered(true);
       const remoteState = await loadRemoteStore();
       await syncAuthenticatedState({
-        username: result?.user?.username || state.auth?.username || state.user.handle || 'lipp',
-        displayName: result?.user?.displayName || state.auth?.displayName || state.user.name || 'Filipe',
+        username: result?.user?.username || state.auth?.username || state.user.handle || 'seu-usuario',
+        displayName: result?.user?.displayName || state.auth?.displayName || state.user.name || 'Seu nome',
         remoteState,
         passkeyRegisteredValue: true,
       });
@@ -295,7 +313,7 @@ export default function App() {
           mode={authMode === 'setup' && !authBootstrapDone ? 'setup' : 'login'}
           isLoading={authLoading}
           errorMessage={authError}
-          defaultDisplayName={state.auth?.displayName || 'Filipe'}
+          defaultDisplayName={state.auth?.displayName || 'Seu nome'}
           canUseFaceId={faceIdSupported}
           hasFaceId={passkeyRegistered}
           onLogin={handleLogin}

@@ -92,7 +92,7 @@ export async function fetchRemoteState() {
   try {
     const data = await request('/state', { method: 'GET' });
     return data?.state || null;
-  } catch (err) {
+  } catch {
     return null;
   }
 }

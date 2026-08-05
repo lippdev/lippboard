@@ -2,7 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './App.css'
-import { APP_VERSION, syncAppVersion } from './services/pwaService.js'
+import { syncAppVersion } from './services/pwaService.js'
 
 (async () => {
   await syncAppVersion();

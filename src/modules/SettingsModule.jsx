@@ -23,8 +23,8 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
   const [faceIdSupported, setFaceIdSupported] = useState(false);
   const [faceIdBusy, setFaceIdBusy] = useState(false);
 
-  const displayName = state.auth?.displayName || state.user.name || 'Filipe';
-  const username = state.auth?.username || state.user.handle || 'lipp';
+  const displayName = state.auth?.displayName || state.user.name || 'Seu nome';
+  const username = state.auth?.username || state.user.handle || 'seu-usuario';
   const passkeyRegistered = Boolean(state.auth?.passkeyRegistered);
 
   const pageChecklist = [
@@ -42,26 +42,9 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
   ];
 
   useEffect(() => {
-    let mounted = true;
-    isFaceIdAvailable() && Promise.resolve().then(() => {
-      if (mounted) setFaceIdSupported(true);
-    });
-    return () => { mounted = false; };
+    if (isFaceIdAvailable()) setFaceIdSupported(true);
   }, []);
 
-  const syncAuthFlags = (next) => {
-    const updated = {
-      ...state,
-      auth: {
-        ...(state.auth || {}),
-        passkeyRegistered,
-      },
-      ...next,
-    };
-    setState(updated);
-    saveStore(updated);
-    return updated;
-  };
 
   const handleSaveToken = (e) => {
     e.preventDefault();
