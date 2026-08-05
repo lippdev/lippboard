@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Sidebar from './components/Sidebar';
-import Topbar from './components/Topbar';
 import MobileDock from './components/MobileDock';
 import SubagentCommandDrawer from './components/SubagentCommandDrawer';
 import LockScreen from './components/LockScreen';
@@ -17,8 +16,8 @@ import MoodModule from './modules/MoodModule';
 import SubagentBridgeModule from './modules/SubagentBridgeModule';
 import SettingsModule from './modules/SettingsModule';
 
-import { getStore, saveStore, loadRemoteStore, clearStore } from './services/store';
-import { bootstrapAccount, getAuthStatus, login as apiLogin, logout as apiLogout } from './services/backendService';
+import { getStore, saveStore, loadRemoteStore } from './services/store';
+import { bootstrapAccount, getAuthStatus, login as apiLogin } from './services/backendService';
 import { isFaceIdAvailable, loginWithFaceId } from './services/passkeyService';
 import './styles/theme.css';
 
@@ -255,18 +254,6 @@ export default function App() {
     }
   };
 
-  const handleLogout = async () => {
-    setAuthLoading(true);
-    try {
-      await apiLogout();
-    } finally {
-      clearStore();
-      setState(getStore());
-      setIsAuthenticated(false);
-      setAuthLoading(false);
-    }
-  };
-
   const renderActiveModule = () => {
     switch (activeModule) {
       case 'home':
@@ -343,17 +330,6 @@ export default function App() {
       {sidebarOpen && <button className="sidebar-backdrop" aria-label="Fechar menu" onClick={() => setSidebarOpen(false)} />}
 
       <main className="app-main">
-        <Topbar
-          activeModule={activeModule}
-          theme={theme}
-          setTheme={setTheme}
-          onOpenDrawer={() => setDrawerOpen(true)}
-          isPwaInstalled={isPwaInstalled}
-          onInstallPwa={deferredPrompt ? handleInstallPwa : null}
-          isSecurityEnabled={true}
-          onLockApp={handleLogout}
-        />
-
         <div className="app-content">
           {renderActiveModule()}
         </div>
