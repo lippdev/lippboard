@@ -938,7 +938,8 @@ body {
   }
 
   .sidebar-scroll {
-    padding-bottom: calc(12px + var(--safe-bottom));
+    padding-bottom: calc(136px + var(--safe-bottom));
+    scroll-padding-bottom: calc(136px + var(--safe-bottom));
   }
 
   .sidebar-header {
