@@ -23,9 +23,9 @@
   --text-secondary: #a1aab8;
   --text-muted: #6f7886;
 
-  --accent-primary: #d81414;
-  --accent-hover: #ff2a2a;
-  --accent-light: rgba(216, 20, 20, 0.12);
+  --accent-primary: #cfd5df;
+  --accent-hover: #eef2f7;
+  --accent-light: rgba(207, 213, 223, 0.12);
 
   --success: #7dd3fc;
   --success-bg: rgba(125, 211, 252, 0.12);
@@ -1017,18 +1017,10 @@ html.app-locked, body.app-locked {
 
 .page-title {
   font-family: var(--font-display);
-  font-size: clamp(3rem, 8vw, 5.8rem);
-  line-height: 0.88;
-  letter-spacing: 0.02em;
+  font-size: clamp(2rem, 4.2vw, 3.4rem);
+  line-height: 0.92;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: #d81414;
-  -webkit-text-stroke: 1.5px rgba(0, 0, 0, 0.9);
-  text-shadow:
-    -6px 6px 0 rgba(0, 0, 0, 0.95),
-    -10px 10px 0 rgba(0, 0, 0, 0.45),
-    0 0 18px rgba(216, 20, 20, 0.25);
-  transform: skew(-3deg, -1deg);
-  paint-order: stroke fill;
 }
 
 .sidebar-brand-text span:first-child,
@@ -1040,25 +1032,20 @@ html.app-locked, body.app-locked {
   font-family: var(--font-display);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #d81414;
-  text-shadow: -2px 2px 0 rgba(0, 0, 0, 0.9), 0 0 12px rgba(216, 20, 20, 0.18);
 }
 
 .sidebar-brand-text span:first-child {
   font-size: 1.05rem;
   line-height: 1;
-  -webkit-text-stroke: 0.8px rgba(0, 0, 0, 0.8);
 }
 
 .nav-section-title,
 .card h3 {
   font-size: 0.88rem;
-  -webkit-text-stroke: 0.45px rgba(0, 0, 0, 0.8);
 }
 
 .topbar-btn.btn-primary {
   font-size: 0.82rem;
-  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.45);
 }
 
 .task-status-pill,
