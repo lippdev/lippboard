@@ -931,10 +931,15 @@ body {
     border-radius: 0 28px 28px 0;
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
     will-change: transform;
+    touch-action: pan-y;
   }
 
   .app-sidebar.open {
     transform: translate3d(0, 0, 0);
+  }
+
+  .app-sidebar.is-dragging {
+    transition: none;
   }
 
   .mobile-menu-btn {

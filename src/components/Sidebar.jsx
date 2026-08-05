@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { 
   Home, 
   Inbox, 
@@ -20,6 +20,10 @@ import {
 } from 'lucide-react';
 
 export default function Sidebar({ activeModule, setActiveModule, isOpen, setIsOpen, state, searchQuery, setSearchQuery }) {
+  const touchStartRef = useRef({ x: 0, y: 0 });
+  const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+
   const modulesList = [
     { id: 'thoughts', label: 'Pensamentos', icon: Lightbulb, badge: state.thoughts.length },
     { id: 'tasks', label: 'Tarefas', icon: CheckSquare, badge: state.tasks.filter(t => t.status === 'a_fazer').length },
@@ -44,8 +48,48 @@ export default function Sidebar({ activeModule, setActiveModule, isOpen, setIsOp
     </button>
   );
 
+  const handleTouchStart = (event) => {
+    if (!isOpen) return;
+    const touch = event.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    setIsDragging(false);
+    setDragX(0);
+  };
+
+  const handleTouchMove = (event) => {
+    if (!isOpen) return;
+    const touch = event.touches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+
+    if (!isDragging) {
+      if (Math.abs(deltaX) < 8 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
+      setIsDragging(true);
+    }
+
+    if (deltaX < 0) {
+      setDragX(Math.max(deltaX, -340));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    const shouldClose = dragX < -72;
+    setDragX(0);
+    setIsDragging(false);
+    if (shouldClose) setIsOpen(false);
+  };
+
   return (
-    <aside className={`app-sidebar ${isOpen ? 'open' : ''}`} aria-hidden={!isOpen}>
+    <aside
+      className={`app-sidebar ${isOpen ? 'open' : ''} ${isDragging ? 'is-dragging' : ''}`}
+      aria-hidden={!isOpen}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+      style={dragX ? { transform: `translate3d(${dragX}px, 0, 0)` } : undefined}
+    >
       <div className="sidebar-header">
         <div className="sidebar-header-main">
           <div className="sidebar-logo-icon">L</div>
