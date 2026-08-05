@@ -129,14 +129,7 @@ export default function App() {
       setDeferredPrompt(e);
     };
 
-    const handleVisibilityChange = () => {
-      if (document.hidden && isAuthenticated) {
-        setIsAuthenticated(false);
-      }
-    };
-
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsPwaInstalled(true);
@@ -144,7 +137,6 @@ export default function App() {
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isAuthenticated]);
 
