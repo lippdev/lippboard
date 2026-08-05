@@ -1,5 +1,6 @@
 // Subagent Bridge Service - Zero API Key & Zero OAuth Execution Engine
 import { getStore, saveStore } from './store.js';
+import { TASK_STATUS } from './taskStatus.js';
 
 export const processAgentCommand = (commandText) => {
   const store = getStore();
@@ -22,8 +23,8 @@ export const processAgentCommand = (commandText) => {
       id: 't_' + Date.now(),
       title: cleanTitle,
       category: 'Subagente',
-      priority: lower.includes('alta') ? 'Alta' : lower.includes('baixa') ? 'Baixa' : 'Media',
-      status: 'pendente',
+      priority: lower.includes('alta') ? 'Alta' : lower.includes('baixa') ? 'Baixa' : 'Média',
+      status: TASK_STATUS.TODO,
       dueDate: lower.includes('amanhã') ? 'Amanhã' : 'Hoje'
     };
 
@@ -85,8 +86,8 @@ export const processAgentCommand = (commandText) => {
       id: 't_' + Date.now(),
       title: commandText,
       category: 'Subagente',
-      priority: 'Media',
-      status: 'pendente',
+      priority: 'Média',
+      status: TASK_STATUS.TODO,
       dueDate: 'Hoje'
     };
     store.tasks.unshift(defaultTask);

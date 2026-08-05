@@ -24,6 +24,10 @@ export const createDefaultState = () => ({
   thoughts: [],
   goals: [],
   calendar: [],
+  notifications: {
+    enabled: false,
+    permission: 'default'
+  },
   mood: {
     todayScore: 0,
     todayNote: '',

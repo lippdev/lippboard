@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Sun, Moon, Download, Key, RefreshCw, CheckCircle, User, Lock, Shield, Fingerprint } from 'lucide-react';
+import { Sun, Moon, Download, Key, RefreshCw, CheckCircle, User, Lock, Shield, Fingerprint, Bell, Send } from 'lucide-react';
+import Modal from '../components/Modal.jsx';
 import { saveStore, clearStore } from '../services/store.js';
 import { clearPwaCache } from '../services/pwaService.js';
 import { changePassword, resetRemoteState } from '../services/backendService.js';
 import { isFaceIdAvailable, registerFaceId } from '../services/passkeyService.js';
+import { getNotificationPermission, requestNotificationPermission, sendAppNotification, supportsNotifications } from '../services/notifications.js';
 
 export default function SettingsModule({ state, setState, theme, setTheme, isPwaInstalled, onInstallPwa }) {
   const [token, setToken] = useState(state.user.githubToken || '');
@@ -22,10 +24,16 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
   const [faceIdError, setFaceIdError] = useState('');
   const [faceIdSupported, setFaceIdSupported] = useState(false);
   const [faceIdBusy, setFaceIdBusy] = useState(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState(false);
+  const [notificationMsg, setNotificationMsg] = useState('');
+  const [notificationError, setNotificationError] = useState('');
+  const [notificationBusy, setNotificationBusy] = useState(false);
 
   const displayName = state.auth?.displayName || state.user.name || 'Seu nome';
   const username = state.auth?.username || state.user.handle || 'seu-usuario';
   const passkeyRegistered = Boolean(state.auth?.passkeyRegistered);
+  const notificationPermission = getNotificationPermission();
+  const notificationsSupported = supportsNotifications();
 
   const pageChecklist = [
     ['Início', 'Layout ajustado'],
@@ -45,6 +53,55 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
     if (isFaceIdAvailable()) setFaceIdSupported(true);
   }, []);
 
+  const persistNotificationState = (enabled, permission) => {
+    const updated = {
+      ...state,
+      notifications: {
+        ...(state.notifications || {}),
+        enabled,
+        permission,
+      },
+    };
+    setState(updated);
+    saveStore(updated);
+  };
+
+  const handleNotificationPermission = async () => {
+    setNotificationBusy(true);
+    setNotificationError('');
+    setNotificationMsg('');
+    try {
+      const permission = await requestNotificationPermission();
+      persistNotificationState(permission === 'granted', permission);
+      setNotificationMsg(permission === 'granted' ? 'Notificações ativadas neste dispositivo.' : 'Permissão de notificações negada.');
+    } catch (err) {
+      setNotificationError(err.message || 'Falha ao pedir permissão.');
+    } finally {
+      setNotificationBusy(false);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    setNotificationBusy(true);
+    setNotificationError('');
+    setNotificationMsg('');
+    try {
+      const permission = notificationPermission === 'default' ? await requestNotificationPermission() : notificationPermission;
+      if (permission !== 'granted') {
+        throw new Error('Ative as notificações para enviar o teste.');
+      }
+      await sendAppNotification({
+        title: 'Lipp Board',
+        body: 'Notificação de teste enviada com sucesso.'
+      });
+      persistNotificationState(true, 'granted');
+      setNotificationMsg('Teste de notificação enviado.');
+    } catch (err) {
+      setNotificationError(err.message || 'Falha ao enviar o teste.');
+    } finally {
+      setNotificationBusy(false);
+    }
+  };
 
   const handleSaveToken = (e) => {
     e.preventDefault();
@@ -311,6 +368,29 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
 
         <div className="card">
           <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Bell size={18} color="var(--info)" />
+            Notificações
+          </h3>
+          <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px' }}>
+            iPhone, Android e desktop suportam notificações web quando o navegador permite e o app está instalado ou aberto em HTTPS.
+          </p>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+            <div>
+              <h4 style={{ fontSize: '14px', fontWeight: '600' }}>Estado atual</h4>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                {notificationsSupported ? `Permissão: ${notificationPermission}` : 'Seu navegador não expõe notificações web.'}
+              </p>
+            </div>
+            <button className="topbar-btn btn-primary" onClick={() => setShowNotificationsModal(true)}>
+              <Bell size={16} />
+              <span>Abrir</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="card">
+          <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Key size={18} color="var(--warning)" />
             Conexão GitHub privada
           </h3>
@@ -369,6 +449,42 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
             <span>Restaurar dados originais</span>
           </button>
         </div>
+
+        <Modal
+          open={showNotificationsModal}
+          title="Notificações web"
+          onClose={() => setShowNotificationsModal(false)}
+          width="560px"
+          footer={(
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button type="button" className="topbar-btn" onClick={() => setShowNotificationsModal(false)}>Fechar</button>
+              <button type="button" className="topbar-btn btn-primary" onClick={handleNotificationPermission} disabled={notificationBusy || notificationPermission === 'granted'}>
+                <Bell size={15} />
+                <span>{notificationBusy ? 'Ativando...' : notificationPermission === 'granted' ? 'Já ativadas' : 'Ativar notificações'}</span>
+              </button>
+              <button type="button" className="topbar-btn btn-primary" onClick={handleTestNotification} disabled={notificationBusy || notificationPermission !== 'granted'}>
+                <Send size={15} />
+                <span>Enviar teste</span>
+              </button>
+            </div>
+          )}
+        >
+          <div style={{ display: 'grid', gap: '12px' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+              Isso usa a API de notificações do navegador. Funciona em iPhone, Android e PCs quando o navegador e o sistema permitem notificações para o site/PWA.
+            </p>
+            <div className="page-check-item">
+              <span>Suporte no navegador</span>
+              <strong>{notificationsSupported ? 'Sim' : 'Não'}</strong>
+            </div>
+            <div className="page-check-item">
+              <span>Permissão atual</span>
+              <strong>{notificationPermission}</strong>
+            </div>
+            {notificationMsg && <div className="inline-success">{notificationMsg}</div>}
+            {notificationError && <div className="inline-error">{notificationError}</div>}
+          </div>
+        </Modal>
       </div>
     </div>
   );

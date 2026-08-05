@@ -1,6 +1,7 @@
 // Lipp Board - Initial Data Store & Local Storage Service
 import { createDefaultState } from './defaultState.js';
 import { saveRemoteState, fetchRemoteState } from './backendService.js';
+import { normalizeTask } from './taskStatus.js';
 
 const STORAGE_KEY = 'lippboard_pwa_data_v4';
 const LEGACY_STORAGE_KEYS = ['lippboard_pwa_data_v1', 'lippboard_pwa_data_v2', 'lippboard_pwa_data_v3'];
@@ -53,7 +54,7 @@ export const getStore = () => {
         ...(parsed.mood || {}),
         history: parsed.mood?.history || []
       },
-      tasks: Array.isArray(parsed.tasks) ? parsed.tasks : createDefaultState().tasks,
+      tasks: Array.isArray(parsed.tasks) ? parsed.tasks.map(normalizeTask) : createDefaultState().tasks,
       thoughts: Array.isArray(parsed.thoughts) ? parsed.thoughts : createDefaultState().thoughts,
       goals: Array.isArray(parsed.goals) ? parsed.goals : createDefaultState().goals,
       calendar: Array.isArray(parsed.calendar) ? parsed.calendar : createDefaultState().calendar,

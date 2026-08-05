@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 export default function HomeModule({ state, setActiveModule, onOpenDrawer }) {
-  const pendingTasks = state.tasks.filter(t => t.status === 'pendente');
+  const pendingTasks = state.tasks.filter(t => t.status === 'a_fazer');
   const recentPrs = state.github.prs.slice(0, 4);
 
   return (

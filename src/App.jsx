@@ -25,7 +25,7 @@ import './styles/theme.css';
 export default function App() {
   const initialStore = useMemo(() => getStore(), []);
   const [state, setState] = useState(initialStore);
-  const [activeModule, setActiveModule] = useState('github');
+  const [activeModule, setActiveModule] = useState('home');
   const [theme, setTheme] = useState(initialStore.theme || 'dark');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -43,6 +43,10 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.style.colorScheme = theme;
+    const themeColor = theme === 'light' ? '#f8fafc' : '#0b0f19';
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', themeColor);
     setState((prev) => {
       if (prev.theme === theme) return prev;
       const updated = { ...prev, theme };

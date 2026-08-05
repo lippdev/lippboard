@@ -22,7 +22,7 @@ import {
 export default function Sidebar({ activeModule, setActiveModule, isOpen, setIsOpen, state, searchQuery, setSearchQuery }) {
   const modulesList = [
     { id: 'thoughts', label: 'Pensamentos', icon: Lightbulb, badge: state.thoughts.length },
-    { id: 'tasks', label: 'Tarefas', icon: CheckSquare, badge: state.tasks.filter(t => t.status === 'pendente').length },
+    { id: 'tasks', label: 'Tarefas', icon: CheckSquare, badge: state.tasks.filter(t => t.status === 'a_fazer').length },
     { id: 'languages', label: 'Estudo de Idiomas', icon: Languages, badge: state.languages.todayStudied ? '✓' : '!' },
     { id: 'calendar', label: 'Calendário', icon: Calendar, badge: state.calendar.length },
     { id: 'goals', label: 'Metas', icon: Target, badge: state.goals.length },
