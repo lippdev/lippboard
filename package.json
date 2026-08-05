@@ -2,6 +2,8 @@
   "name": "lipp-board-pwa",
   "private": true,
   "version": "0.0.0",
+  "description": "Lipp Board, a personal PWA for productivity, auth, and mobile-first daily use.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
