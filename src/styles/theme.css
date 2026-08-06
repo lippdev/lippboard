@@ -429,6 +429,22 @@ img, svg, canvas, video, iframe {
 }
 
 /* Main Content Shell */
+.app-shell {
+  min-height: 100dvh;
+  display: flex;
+  background:
+    radial-gradient(circle at top, rgba(148, 163, 184, 0.08), transparent 36%),
+    var(--bg-primary);
+}
+
+.app-shell__main {
+  position: relative;
+}
+
+.app-shell__statusbar {
+  display: none;
+}
+
 .app-main {
   flex: 1;
   display: flex;
@@ -806,8 +822,23 @@ body {
 }
 
 @media (max-width: 900px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
   .app-main {
     height: 100dvh;
+  }
+
+  .app-shell__statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(12px + var(--safe-top)) 16px 8px;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
   }
 
   .app-topbar {

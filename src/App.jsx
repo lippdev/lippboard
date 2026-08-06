@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import Sidebar from './components/Sidebar';
-import MobileDock from './components/MobileDock';
-import SubagentCommandDrawer from './components/SubagentCommandDrawer';
 import LockScreen from './components/LockScreen';
+import MobileAppShell from './components/MobileAppShell.jsx';
 
 import HomeModule from './modules/HomeModule';
 import GithubModule from './modules/GithubModule';
@@ -16,9 +14,8 @@ import MoodModule from './modules/MoodModule';
 import SubagentBridgeModule from './modules/SubagentBridgeModule';
 import SettingsModule from './modules/SettingsModule';
 
-import { getStore, saveStore, loadRemoteStore } from './services/store';
-import { bootstrapAccount, getAuthStatus, login as apiLogin } from './services/backendService';
-import { isFaceIdAvailable, loginWithFaceId } from './services/passkeyService';
+import { getStore, saveStore } from './services/store';
+import { useAuthSession } from './hooks/useAuthSession.js';
 import './styles/theme.css';
 
 export default function App() {
@@ -29,14 +26,19 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [authMode, setAuthMode] = useState('login');
-  const [authLoading, setAuthLoading] = useState(true);
-  const [authError, setAuthError] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authBootstrapDone, setAuthBootstrapDone] = useState(false);
-  const [faceIdSupported, setFaceIdSupported] = useState(false);
-  const [passkeyRegistered, setPasskeyRegistered] = useState(false);
-  const [autoFaceIdAttempted, setAutoFaceIdAttempted] = useState(false);
+
+  const {
+    authMode,
+    authLoading,
+    authError,
+    isAuthenticated,
+    authBootstrapDone,
+    faceIdSupported,
+    passkeyRegistered,
+    handleLogin,
+    handleFaceIdLogin,
+    handleSetup,
+  } = useAuthSession({ state, setState, setTheme });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -53,168 +55,18 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    setFaceIdSupported(isFaceIdAvailable());
-  }, []);
-
-  useEffect(() => {
     document.body.classList.toggle('sidebar-locked', sidebarOpen);
     return () => document.body.classList.remove('sidebar-locked');
   }, [sidebarOpen]);
 
   useEffect(() => {
-    let cancelled = false;
-
-    const boot = async () => {
-      try {
-        const status = await getAuthStatus();
-        if (cancelled) return;
-
-        if (status.backendAvailable === false) {
-          setAuthError('Não foi possível conectar ao banco do app.');
-          setAuthLoading(false);
-          setIsAuthenticated(false);
-          return;
-        }
-
-        setAuthMode(status.firstRun ? 'setup' : 'login');
-        setPasskeyRegistered(Boolean(status.passkeyRegistered));
-
-        if (status.authenticated) {
-          const remoteState = await loadRemoteStore();
-          if (cancelled) return;
-          if (remoteState) {
-            const hydrated = {
-              ...remoteState,
-              auth: {
-                ...(remoteState.auth || {}),
-                passkeyRegistered: Boolean(status.passkeyRegistered),
-              },
-            };
-            setState(hydrated);
-            setTheme(remoteState.theme || 'dark');
-            saveStore(hydrated);
-          }
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setAuthError(err.message || 'Falha ao iniciar o app.');
-          setIsAuthenticated(false);
-        }
-      } finally {
-        if (!cancelled) setAuthLoading(false);
-      }
-    };
-
-    boot();
-
+    document.body.classList.toggle('app-locked', !isAuthenticated);
+    document.documentElement.classList.toggle('app-locked', !isAuthenticated);
     return () => {
-      cancelled = true;
+      document.body.classList.remove('app-locked');
+      document.documentElement.classList.remove('app-locked');
     };
-  }, []);
-
-  useEffect(() => {
-    if (
-      !authLoading &&
-      !isAuthenticated &&
-      !autoFaceIdAttempted &&
-      authMode === 'login' &&
-      passkeyRegistered &&
-      faceIdSupported
-    ) {
-      setAutoFaceIdAttempted(true);
-      void (async () => {
-        setAuthLoading(true);
-        setAuthError('');
-        try {
-          const result = await loginWithFaceId();
-          setPasskeyRegistered(true);
-          const remoteState = await loadRemoteStore();
-          await syncAuthenticatedState({
-            username: result?.user?.username || state.auth?.username || state.user.handle || 'seu-usuario',
-            displayName: result?.user?.displayName || state.auth?.displayName || state.user.name || 'Seu nome',
-            remoteState,
-            passkeyRegisteredValue: true,
-          });
-        } catch (err) {
-          setAuthError(err.message || 'Falha no Face ID.');
-        } finally {
-          setAuthLoading(false);
-        }
-      })();
-    }
-  }, [authLoading, isAuthenticated, authMode, autoFaceIdAttempted, passkeyRegistered, faceIdSupported, state.auth?.displayName, state.auth?.username, state.user.handle, state.user.name]);
-
-  const syncAuthenticatedState = async ({ username, displayName, remoteState, passkeyRegisteredValue = passkeyRegistered }) => {
-    const hydratedState = {
-      ...(remoteState || getStore()),
-      auth: {
-        ...(remoteState?.auth || {}),
-        username,
-        displayName: remoteState?.auth?.displayName || remoteState?.user?.name || displayName || username,
-        lastLoginAt: new Date().toISOString(),
-        rememberSession: true,
-        passkeyRegistered: passkeyRegisteredValue,
-      },
-    };
-    setState(hydratedState);
-    saveStore(hydratedState);
-    setTheme(hydratedState.theme || 'dark');
-    setIsAuthenticated(true);
-    setAuthBootstrapDone(true);
-  };
-
-  const handleLogin = async ({ username, password }) => {
-    setAuthLoading(true);
-    setAuthError('');
-    try {
-      const result = await apiLogin({ username, password });
-      const remoteState = await loadRemoteStore();
-      setPasskeyRegistered(Boolean(result?.passkeyRegistered ?? passkeyRegistered));
-      await syncAuthenticatedState({ username, displayName: result?.user?.displayName || username, remoteState, passkeyRegisteredValue: Boolean(result?.passkeyRegistered ?? passkeyRegistered) });
-    } catch (err) {
-      setAuthError(err.message || 'Falha no login.');
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  const handleFaceIdLogin = async () => {
-    setAuthLoading(true);
-    setAuthError('');
-    try {
-      const result = await loginWithFaceId();
-      setPasskeyRegistered(true);
-      const remoteState = await loadRemoteStore();
-      await syncAuthenticatedState({
-        username: result?.user?.username || state.auth?.username || state.user.handle || 'seu-usuario',
-        displayName: result?.user?.displayName || state.auth?.displayName || state.user.name || 'Seu nome',
-        remoteState,
-        passkeyRegisteredValue: true,
-      });
-    } catch (err) {
-      setAuthError(err.message || 'Falha no Face ID.');
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  const handleSetup = async ({ username, displayName, password }) => {
-    setAuthLoading(true);
-    setAuthError('');
-    try {
-      const result = await bootstrapAccount({ username, displayName, password });
-      setPasskeyRegistered(Boolean(result?.passkeyRegistered));
-      const remoteState = await loadRemoteStore();
-      await syncAuthenticatedState({ username, displayName, remoteState, passkeyRegisteredValue: Boolean(result?.passkeyRegistered ?? passkeyRegistered) });
-    } catch (err) {
-      setAuthError(err.message || 'Falha ao criar acesso.');
-    } finally {
-      setAuthLoading(false);
-    }
-  };
+  }, [isAuthenticated]);
 
   const renderActiveModule = () => {
     switch (activeModule) {
@@ -278,36 +130,19 @@ export default function App() {
   }
 
   return (
-    <div className="app-container">
-      <Sidebar
-        activeModule={activeModule}
-        setActiveModule={setActiveModule}
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-        state={state}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-      />
-
-      {sidebarOpen && <button className="sidebar-backdrop" aria-label="Fechar menu" onClick={() => setSidebarOpen(false)} />}
-
-      <main className="app-main">
-        <div className="app-content">
-          {renderActiveModule()}
-        </div>
-      </main>
-
-      <SubagentCommandDrawer
-        isOpen={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        onStateChange={(newState) => setState({ ...newState })}
-      />
-
-      <MobileDock
-        activeModule={activeModule}
-        setActiveModule={setActiveModule}
-        onOpenMenu={() => setSidebarOpen((prev) => !prev)}
-      />
-    </div>
+    <MobileAppShell
+      activeModule={activeModule}
+      setActiveModule={setActiveModule}
+      sidebarOpen={sidebarOpen}
+      setSidebarOpen={setSidebarOpen}
+      drawerOpen={drawerOpen}
+      setDrawerOpen={setDrawerOpen}
+      state={state}
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
+      onStateChange={(newState) => setState({ ...newState })}
+    >
+      {renderActiveModule()}
+    </MobileAppShell>
   );
 }
