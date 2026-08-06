@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lippboard-shell-v8';
+const CACHE_NAME = 'lippboard-shell-v9';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
