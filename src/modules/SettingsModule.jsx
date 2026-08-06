@@ -198,8 +198,8 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
   return (
     <div className="module-page">
       <div className="page-header">
-        <h1 className="page-title">Configurações do Sistema</h1>
-        <p className="page-subtitle">Perfil, acesso, Face ID, aparência e manutenção do Lipp Board em um só lugar.</p>
+        <h1 className="page-title">CONFIGS</h1>
+        <p className="page-subtitle">Perfil, acesso, tema e manutenção do app em um só lugar.</p>
       </div>
 
       <div className="card" style={{ marginBottom: '20px' }}>
@@ -334,7 +334,7 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
         <div className="card">
           <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Sun size={18} color="var(--accent-primary)" />
-            Aparência & PWA
+            CONFIGS
           </h3>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--border-color)' }}>
