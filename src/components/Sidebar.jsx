@@ -15,8 +15,7 @@ import {
   Bot, 
   Settings,
   Search,
-  ChevronLeft,
-  Sparkles
+  ChevronLeft
 } from 'lucide-react';
 
 export default function Sidebar({ activeModule, setActiveModule, isOpen, setIsOpen, state, searchQuery, setSearchQuery }) {
@@ -135,10 +134,6 @@ export default function Sidebar({ activeModule, setActiveModule, isOpen, setIsOp
 
         <div className="sidebar-footer">
           <div className="sidebar-footer-card">
-            <div className="sidebar-footer-copy">
-              <Sparkles size={14} />
-              <span>Modo PWA / toque rápido</span>
-            </div>
             {navItem('settings', 'Configurações', Settings)}
           </div>
         </div>
