@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Sun, Moon, Download, Key, RefreshCw, CheckCircle, User, Lock, Shield, Fingerprint, Bell, Send } from 'lucide-react';
+import { Sun, Moon, Key, RefreshCw, CheckCircle, User, Lock, Shield, Fingerprint, Bell, Send } from 'lucide-react';
 import Modal from '../components/Modal.jsx';
 import { saveStore, clearStore } from '../services/store.js';
 import { clearPwaCache } from '../services/pwaService.js';
@@ -7,7 +7,7 @@ import { changePassword, resetRemoteState } from '../services/backendService.js'
 import { isFaceIdAvailable, registerFaceId } from '../services/passkeyService.js';
 import { getNotificationPermission, requestNotificationPermission, sendAppNotification, supportsNotifications } from '../services/notifications.js';
 
-export default function SettingsModule({ state, setState, theme, setTheme, isPwaInstalled, onInstallPwa }) {
+export default function SettingsModule({ state, setState, theme, setTheme }) {
   const [token, setToken] = useState(state.user.githubToken || '');
   const [name, setName] = useState(state.user.name || '');
   const [handle, setHandle] = useState(state.user.handle || '');
@@ -334,7 +334,7 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
         <div className="card">
           <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Sun size={18} color="var(--accent-primary)" />
-            CONFIGS
+            Interface
           </h3>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--border-color)' }}>
@@ -350,19 +350,12 @@ export default function SettingsModule({ state, setState, theme, setTheme, isPwa
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0' }}>
             <div>
-              <h4 style={{ fontSize: '14px', fontWeight: '600' }}>Status do PWA</h4>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Instale o Lipp Board diretamente na área de trabalho ou celular.</p>
+              <h4 style={{ fontSize: '14px', fontWeight: '600' }}>Aparência geral</h4>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Configurações visuais pensadas para um app de celular.</p>
             </div>
-            {isPwaInstalled ? (
-              <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <CheckCircle size={16} /> PWA instalado
-              </span>
-            ) : (
-              <button className="topbar-btn btn-primary" onClick={onInstallPwa}>
-                <Download size={16} />
-                <span>Instalar PWA</span>
-              </button>
-            )}
+            <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <CheckCircle size={16} /> Ativo
+            </span>
           </div>
         </div>
 

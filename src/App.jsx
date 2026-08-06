@@ -29,8 +29,6 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isPwaInstalled, setIsPwaInstalled] = useState(false);
   const [authMode, setAuthMode] = useState('login');
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState('');
@@ -62,15 +60,6 @@ export default function App() {
     document.body.classList.toggle('sidebar-locked', sidebarOpen);
     return () => document.body.classList.remove('sidebar-locked');
   }, [sidebarOpen]);
-
-  useEffect(() => {
-    document.body.classList.toggle('app-locked', !isAuthenticated);
-    document.documentElement.classList.toggle('app-locked', !isAuthenticated);
-    return () => {
-      document.body.classList.remove('app-locked');
-      document.documentElement.classList.remove('app-locked');
-    };
-  }, [isAuthenticated]);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,23 +116,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const handleBeforeInstall = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsPwaInstalled(true);
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-    };
-  }, [isAuthenticated]);
-
-  useEffect(() => {
     if (
       !authLoading &&
       !isAuthenticated &&
@@ -174,16 +146,6 @@ export default function App() {
       })();
     }
   }, [authLoading, isAuthenticated, authMode, autoFaceIdAttempted, passkeyRegistered, faceIdSupported, state.auth?.displayName, state.auth?.username, state.user.handle, state.user.name]);
-
-  const handleInstallPwa = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setIsPwaInstalled(true);
-    }
-    setDeferredPrompt(null);
-  };
 
   const syncAuthenticatedState = async ({ username, displayName, remoteState, passkeyRegisteredValue = passkeyRegistered }) => {
     const hydratedState = {
@@ -277,7 +239,7 @@ export default function App() {
       case 'agentbridge':
         return <SubagentBridgeModule state={state} setState={setState} />;
       case 'settings':
-        return <SettingsModule state={state} setState={setState} theme={theme} setTheme={setTheme} isPwaInstalled={isPwaInstalled} onInstallPwa={handleInstallPwa} />;
+        return <SettingsModule state={state} setState={setState} theme={theme} setTheme={setTheme} />;
       default:
         return <GithubModule state={state} setState={setState} />;
     }

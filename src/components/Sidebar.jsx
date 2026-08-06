@@ -1,39 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { 
-  Home, 
-  Inbox, 
-  Activity, 
-  Tag, 
-  Lightbulb, 
-  CheckSquare, 
-  Languages, 
-  Calendar, 
-  Target, 
-  GitPullRequest, 
-  Folder, 
-  Smile, 
-  Bot, 
-  Settings,
-  Search,
-  ChevronLeft
-} from 'lucide-react';
+import { Search, ChevronLeft, Settings } from 'lucide-react';
+import { SIDEBAR_MODULES, SIDEBAR_QUICK_ACTIONS } from '../config/appNavigation.js';
 
 export default function Sidebar({ activeModule, setActiveModule, isOpen, setIsOpen, state, searchQuery, setSearchQuery }) {
   const touchStartRef = useRef({ x: 0, y: 0 });
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-
-  const modulesList = [
-    { id: 'thoughts', label: 'Pensamentos', icon: Lightbulb, badge: state.thoughts.length },
-    { id: 'tasks', label: 'Tarefas', icon: CheckSquare, badge: state.tasks.filter(t => t.status === 'a_fazer').length },
-    { id: 'languages', label: 'Estudo de Idiomas', icon: Languages, badge: state.languages.todayStudied ? '✓' : '!' },
-    { id: 'calendar', label: 'Calendário', icon: Calendar, badge: state.calendar.length },
-    { id: 'goals', label: 'Metas', icon: Target, badge: state.goals.length },
-    { id: 'github', label: 'GitHub', icon: GitPullRequest, badge: state.github.prs.length },
-    { id: 'fileboard', label: 'Arquivos', icon: Folder, badge: state.files?.length || 0 },
-    { id: 'mood', label: 'Humor', icon: Smile, badge: `${state.mood.todayScore}/5` },
-    { id: 'agentbridge', label: 'Ponte do Subagente', icon: Bot, badge: 'IA' },
-  ];
 
   const navItem = (id, label, Icon, badge) => (
     <button
@@ -121,15 +93,28 @@ export default function Sidebar({ activeModule, setActiveModule, isOpen, setIsOp
 
       <div className="sidebar-scroll">
         <div className="sidebar-quick-actions">
-          {navItem('home', 'Início', Home)}
-          {navItem('inbox', 'Caixa de Entrada', Inbox)}
-          {navItem('activity', 'Atividades', Activity)}
-          {navItem('tags', 'Tags', Tag)}
+          {SIDEBAR_QUICK_ACTIONS.map(({ id, label, icon: Icon }) => navItem(id, label, Icon))}
         </div>
 
         <div className="sidebar-nav-section">
           <div className="nav-section-title">MÓDULOS</div>
-          {modulesList.map(({ id, label, icon: Icon, badge }) => navItem(id, label, Icon, badge))}
+          {SIDEBAR_MODULES.map(({ id, label, icon: Icon, badge }) => {
+            const resolvedBadge = id === 'tasks'
+              ? state.tasks.filter((task) => task.status === 'a_fazer').length
+              : id === 'languages'
+                ? (state.languages.todayStudied ? '✓' : '!')
+                : id === 'github'
+                  ? state.github.prs.length
+                  : id === 'fileboard'
+                    ? state.files?.length || 0
+                    : id === 'mood'
+                      ? `${state.mood.todayScore}/5`
+                      : id === 'thoughts'
+                        ? state.thoughts.length
+                        : badge;
+
+            return navItem(id, label, Icon, resolvedBadge);
+          })}
         </div>
 
         <div className="sidebar-footer">

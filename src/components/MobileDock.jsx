@@ -1,11 +1,6 @@
 import React from 'react';
-import { Menu, Home, CheckSquare, GitPullRequest } from 'lucide-react';
-
-const items = [
-  { id: 'home', label: 'Início', icon: Home },
-  { id: 'tasks', label: 'Tarefas', icon: CheckSquare },
-  { id: 'github', label: 'GitHub', icon: GitPullRequest },
-];
+import { Menu } from 'lucide-react';
+import { MOBILE_DOCK_ITEMS } from '../config/appNavigation.js';
 
 export default function MobileDock({ activeModule, setActiveModule, onOpenMenu }) {
   return (
@@ -22,7 +17,7 @@ export default function MobileDock({ activeModule, setActiveModule, onOpenMenu }
           <span>Menu</span>
         </button>
 
-        {items.map(({ id, label, icon: Icon }) => (
+        {MOBILE_DOCK_ITEMS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             type="button"
