@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createDefaultState } from '../src/services/defaultState.js';
 import { createAuth } from './auth.js';
+import { createClient } from '@supabase/supabase-js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,7 +12,18 @@ const ROOT = path.resolve(__dirname, '..');
 const DIST_DIR = path.join(ROOT, 'dist');
 const DB_PATH = process.env.LIPPBOARD_DB_PATH || path.join(ROOT, 'data', 'lippboard.sqlite');
 const DB_DIR = path.dirname(DB_PATH);
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const SUPABASE_SYNC_ENABLED = Boolean(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
 const PORT = Number(process.env.PORT || process.env.LIPPBOARD_PORT || 4174);
+const supabase = SUPABASE_SYNC_ENABLED
+  ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
+  : null;
 
 if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR, { recursive: true });
 
@@ -36,6 +48,46 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+async function ensureSupabaseAppStateRow() {
+  if (!supabase) return;
+  const { data, error } = await supabase.from('app_state').select('id').eq('id', 1).maybeSingle();
+  if (error) throw error;
+  if (!data) {
+    const { error: insertError } = await supabase.from('app_state').insert({
+      id: 1,
+      payload: defaultState,
+      updated_at: nowIso(),
+    });
+    if (insertError) throw insertError;
+  }
+}
+
+async function readAppState() {
+  if (supabase) {
+    await ensureSupabaseAppStateRow();
+    const { data, error } = await supabase.from('app_state').select('payload').eq('id', 1).maybeSingle();
+    if (error) throw error;
+    return data?.payload ? { ...createDefaultState(), ...data.payload } : createDefaultState();
+  }
+
+  const row = database.prepare('SELECT payload FROM app_state WHERE id = 1').get();
+  return row ? JSON.parse(row.payload) : createDefaultState();
+}
+
+async function saveAppState(state) {
+  if (supabase) {
+    const { error } = await supabase.from('app_state').upsert({
+      id: 1,
+      payload: state,
+      updated_at: nowIso(),
+    }, { onConflict: 'id' });
+    if (error) throw error;
+    return;
+  }
+
+  database.prepare('UPDATE app_state SET payload = ?, updated_at = ? WHERE id = 1').run(JSON.stringify(state), nowIso());
+}
+
 function json(res, status, data) {
   const body = JSON.stringify(data);
   res.writeHead(status, {
@@ -52,15 +104,6 @@ function text(res, status, body, contentType = 'text/plain; charset=utf-8') {
     'Cache-Control': 'no-store',
   });
   res.end(body);
-}
-
-function readAppState() {
-  const row = database.prepare('SELECT payload FROM app_state WHERE id = 1').get();
-  return row ? JSON.parse(row.payload) : createDefaultState();
-}
-
-function saveAppState(state) {
-  database.prepare('UPDATE app_state SET payload = ?, updated_at = ? WHERE id = 1').run(JSON.stringify(state), nowIso());
 }
 
 function serveStatic(req, res) {
@@ -113,6 +156,7 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, {
         ok: true,
         database: true,
+        syncTarget: SUPABASE_SYNC_ENABLED ? 'supabase' : 'sqlite',
         authenticated: Boolean(session),
         firstRun: await isFirstRun(),
         userCount: await (async () => {
@@ -149,7 +193,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/state' && req.method === 'GET') {
       const session = await getSessionFromRequest(req);
       if (!session) return json(res, 401, { error: 'Não autenticado.' });
-      return json(res, 200, { ok: true, state: readAppState() });
+      return json(res, 200, { ok: true, state: await readAppState() });
     }
 
     if (url.pathname === '/api/state' && req.method === 'PUT') {
@@ -178,14 +222,14 @@ const server = http.createServer(async (req, res) => {
         return json(res, 400, { error: 'Estado inválido.' });
       }
       const nextState = { ...createDefaultState(), ...body.state };
-      saveAppState(nextState);
+      await saveAppState(nextState);
       return json(res, 200, { ok: true });
     }
 
     if (url.pathname === '/api/state/reset' && req.method === 'POST') {
       const session = await getSessionFromRequest(req);
       if (!session) return json(res, 401, { error: 'Não autenticado.' });
-      saveAppState(createDefaultState());
+      await saveAppState(createDefaultState());
       return json(res, 200, { ok: true });
     }
 
