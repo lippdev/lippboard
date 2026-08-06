@@ -4,14 +4,43 @@ import { saveRemoteState, fetchRemoteState } from './backendService.js';
 import { normalizeTask } from './taskStatus.js';
 
 const STORAGE_KEY = 'lippboard_pwa_data_v4';
+const PENDING_REMOTE_KEY = 'lippboard_pwa_pending_remote_v1';
 const LEGACY_STORAGE_KEYS = ['lippboard_pwa_data_v1', 'lippboard_pwa_data_v2', 'lippboard_pwa_data_v3'];
 
+
+const queueRemoteState = (state) => {
+  try {
+    localStorage.setItem(PENDING_REMOTE_KEY, JSON.stringify({ state, queuedAt: new Date().toISOString() }));
+  } catch (err) {
+    console.error('Erro ao enfileirar sincronização offline:', err);
+  }
+};
+
+const clearQueuedRemoteState = () => {
+  try {
+    localStorage.removeItem(PENDING_REMOTE_KEY);
+  } catch (err) {
+    console.error('Erro ao limpar fila offline:', err);
+  }
+};
+
+const flushQueuedRemoteState = async () => {
+  try {
+    const raw = localStorage.getItem(PENDING_REMOTE_KEY);
+    if (!raw || (typeof navigator !== 'undefined' && navigator.onLine === false)) return;
+    const queued = JSON.parse(raw);
+    if (!queued?.state) return;
+    const result = await saveRemoteState(queued.state);
+    if (result?.ok) clearQueuedRemoteState();
+  } catch (err) {
+    console.warn('Falha ao reenviar estado enfileirado:', err);
+  }
+};
 
 const stripDeprecatedFields = (state) => {
   const { security: _security, ...rest } = state || {};
   return rest;
 };
-
 
 export const getStore = () => {
   try {
@@ -71,7 +100,14 @@ export const saveStore = (state) => {
   try {
     const sanitized = stripDeprecatedFields(state);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
-    void saveRemoteState(sanitized);
+    void (async () => {
+      const result = await saveRemoteState(sanitized);
+      if (result?.ok) {
+        clearQueuedRemoteState();
+      } else {
+        queueRemoteState(sanitized);
+      }
+    })();
   } catch (err) {
     console.error('Erro ao salvar estado no localStorage:', err);
   }
@@ -82,6 +118,7 @@ export const loadRemoteStore = async () => {
     const remoteState = await fetchRemoteState();
     if (remoteState) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteState));
+      void flushQueuedRemoteState();
       return remoteState;
     }
   } catch (err) {

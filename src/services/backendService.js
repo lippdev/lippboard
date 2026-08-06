@@ -38,29 +38,38 @@ export async function getAuthStatus() {
 }
 
 export async function bootstrapAccount({ username, displayName, password }) {
-  return request('/auth/bootstrap', {
+  return request('/auth/sign-up/email', {
     method: 'POST',
-    body: JSON.stringify({ username, displayName, password }),
+    body: JSON.stringify({
+      name: displayName,
+      email: username,
+      password,
+      rememberMe: true,
+    }),
   });
 }
 
 export async function login({ username, password }) {
-  return request('/auth/login', {
+  return request('/auth/sign-in/email', {
     method: 'POST',
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({
+      email: username,
+      password,
+      rememberMe: true,
+    }),
   });
 }
 
 export async function logout() {
   try {
-    return await request('/auth/logout', { method: 'POST' });
+    return await request('/auth/sign-out', { method: 'POST' });
   } catch (err) {
     return { ok: false, error: err.message };
   }
 }
 
 export async function changePassword({ currentPassword, newPassword }) {
-  return request('/auth/password', {
+  return request('/auth/change-password', {
     method: 'POST',
     body: JSON.stringify({ currentPassword, newPassword }),
   });

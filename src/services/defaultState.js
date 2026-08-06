@@ -28,6 +28,10 @@ export const createDefaultState = () => ({
     enabled: false,
     permission: 'default'
   },
+  onboarding: {
+    completed: false,
+    completedAt: ''
+  },
   mood: {
     todayScore: 0,
     todayNote: '',

@@ -29,12 +29,12 @@ export default function LockScreen({
 
   const helperText = useMemo(() => {
     if (isSetupMode) {
-      return 'Crie o primeiro usuário administrador. Depois disso, o acesso passa a ser feito com login comum, sessão no banco e Face ID opcional.';
+      return 'Crie o primeiro usuário administrador. Depois disso, o acesso passa a ser feito com email e senha.';
     }
 
     return hasQuickFaceId
       ? 'Seu Face ID já está pronto. Toque no botão biométrico para entrar sem digitar senha.'
-      : 'Use seu usuário e senha para entrar. Depois você pode cadastrar Face ID nas configurações.';
+      : 'Use seu email e senha para entrar. Depois você pode cadastrar Face ID nas configurações.';
   }, [hasQuickFaceId, isSetupMode]);
 
   const submitLabel = isSetupMode ? 'Criar conta e entrar' : 'Entrar';
@@ -146,13 +146,13 @@ export default function LockScreen({
           )}
 
           <label className="auth-field">
-            <span>Usuário</span>
+            <span>Email</span>
             <input
-              type="text"
+              type="email"
               value={username}
               onChange={(e) => { setLocalError(''); setUsername(e.target.value); }}
-              placeholder="ex.: seu-usuario"
-              autoComplete="username"
+              placeholder="ex.: voce@dominio.com"
+              autoComplete="email"
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck="false"

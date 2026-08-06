@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getStore, saveStore, loadRemoteStore } from '../services/store.js';
 import { bootstrapAccount, getAuthStatus, login as apiLogin } from '../services/backendService.js';
-import { isFaceIdAvailable, loginWithFaceId } from '../services/passkeyService.js';
+import { loginWithFaceId } from '../services/passkeyService.js';
 
 export function useAuthSession({ state, setState, setTheme }) {
   const [authMode, setAuthMode] = useState('login');
@@ -14,7 +14,7 @@ export function useAuthSession({ state, setState, setTheme }) {
   const [autoFaceIdAttempted, setAutoFaceIdAttempted] = useState(false);
 
   useEffect(() => {
-    setFaceIdSupported(isFaceIdAvailable());
+    setFaceIdSupported(false);
   }, []);
 
   useEffect(() => {

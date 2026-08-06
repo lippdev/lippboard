@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Feather, HeartPulse, Languages, GitPullRequest, Smile, Wind, CheckSquare, Flame } from 'lucide-react';
+import { ArrowRight, Feather, HeartPulse, Languages, GitPullRequest, Smile, Wind, CheckSquare, Flame, CheckCircle2 } from 'lucide-react';
 import Modal from '../components/Modal.jsx';
+import { saveStore } from '../services/store.js';
 
 const RITUALS = [
   {
@@ -36,6 +37,7 @@ const DAILY_PROMPTS = [
 export default function HomeModule({ state, setActiveModule }) {
   const pendingTasks = state.tasks.filter((t) => t.status === 'a_fazer');
   const recentPrs = state.github.prs.slice(0, 4);
+  const onboardingCompleted = Boolean(state.onboarding?.completed);
   const [breathingOpen, setBreathingOpen] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(60);
 
@@ -77,6 +79,38 @@ export default function HomeModule({ state, setActiveModule }) {
         </button>
       </div>
 
+      {!onboardingCompleted && (
+        <div className="card" style={{ marginBottom: '20px', border: '1px solid rgba(59,130,246,.28)', background: 'linear-gradient(180deg, rgba(59,130,246,.12), rgba(15,23,42,.94))' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ minWidth: 0 }}>
+              <span className="stoic-kicker">ONBOARDING</span>
+              <h3 style={{ margin: '6px 0 8px', fontSize: '18px', fontWeight: 800 }}>Configuração rápida ainda pendente</h3>
+              <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '720px' }}>
+                O básico já está pronto. Só falta marcar esse onboarding como concluído para limpar a Home e seguir com o fluxo normal.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="topbar-btn btn-primary"
+              onClick={() => {
+                const updated = {
+                  ...state,
+                  onboarding: {
+                    ...(state.onboarding || {}),
+                    completed: true,
+                    completedAt: new Date().toISOString(),
+                  },
+                };
+                saveStore(updated);
+                window.location.reload();
+              }}
+            >
+              <CheckCircle2 size={16} />
+              <span>Concluir onboarding</span>
+            </button>
+          </div>
+        </div>
+      )}
       <div className="stoic-hero card">
         <div className="stoic-hero__copy">
           <span className="stoic-kicker">CHECK-IN DIÁRIO</span>

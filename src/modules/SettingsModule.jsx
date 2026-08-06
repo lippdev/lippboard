@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { Sun, Moon, Key, RefreshCw, CheckCircle, User, Lock, Shield, Fingerprint, Bell, Send } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sun, Moon, Key, RefreshCw, CheckCircle, User, Lock, Shield, Bell, Send } from 'lucide-react';
 import Modal from '../components/Modal.jsx';
 import { saveStore, clearStore } from '../services/store.js';
 import { clearPwaCache } from '../services/pwaService.js';
 import { changePassword, resetRemoteState } from '../services/backendService.js';
-import { isFaceIdAvailable, registerFaceId } from '../services/passkeyService.js';
 import { getNotificationPermission, requestNotificationPermission, sendAppNotification, supportsNotifications } from '../services/notifications.js';
 
 export default function SettingsModule({ state, setState, theme, setTheme }) {
@@ -20,10 +19,6 @@ export default function SettingsModule({ state, setState, theme, setTheme }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordMsg, setPasswordMsg] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [faceIdMsg, setFaceIdMsg] = useState('');
-  const [faceIdError, setFaceIdError] = useState('');
-  const [faceIdSupported, setFaceIdSupported] = useState(false);
-  const [faceIdBusy, setFaceIdBusy] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const [notificationMsg, setNotificationMsg] = useState('');
   const [notificationError, setNotificationError] = useState('');
@@ -31,7 +26,6 @@ export default function SettingsModule({ state, setState, theme, setTheme }) {
 
   const displayName = state.auth?.displayName || state.user.name || 'Seu nome';
   const username = state.auth?.username || state.user.handle || 'seu-usuario';
-  const passkeyRegistered = Boolean(state.auth?.passkeyRegistered);
   const notificationPermission = getNotificationPermission();
   const notificationsSupported = supportsNotifications();
 
@@ -48,10 +42,6 @@ export default function SettingsModule({ state, setState, theme, setTheme }) {
     ['Ponte IA', 'Comandos e histórico'],
     ['Configurações', 'Perfil, acesso, Face ID e tema'],
   ];
-
-  useEffect(() => {
-    if (isFaceIdAvailable()) setFaceIdSupported(true);
-  }, []);
 
   const persistNotificationState = (enabled, permission) => {
     const updated = {
@@ -163,30 +153,6 @@ export default function SettingsModule({ state, setState, theme, setTheme }) {
     }
   };
 
-  const handleRegisterFaceId = async () => {
-    setFaceIdMsg('');
-    setFaceIdError('');
-    setFaceIdBusy(true);
-    try {
-      await registerFaceId();
-      const updated = {
-        ...state,
-        auth: {
-          ...(state.auth || {}),
-          passkeyRegistered: true,
-        },
-      };
-      setState(updated);
-      saveStore(updated);
-      setFaceIdMsg('Face ID cadastrado com sucesso. Agora você pode entrar sem digitar senha.');
-      setTimeout(() => setFaceIdMsg(''), 4000);
-    } catch (err) {
-      setFaceIdError(err.message || 'Não foi possível cadastrar o Face ID.');
-    } finally {
-      setFaceIdBusy(false);
-    }
-  };
-
   const handleResetData = async () => {
     if (window.confirm('Deseja realmente restaurar os dados originais do Lipp Board?')) {
       clearStore();
@@ -295,39 +261,15 @@ export default function SettingsModule({ state, setState, theme, setTheme }) {
 
         <div className="card">
           <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Fingerprint size={18} color="var(--accent-primary)" />
-            Face ID / Biometria do iPhone
+            <Shield size={18} color="var(--accent-primary)" />
+            Auth em migração
           </h3>
-          <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '14px' }}>
-            Cadastre um passkey no seu iPhone para entrar sem digitar usuário e senha. O desbloqueio usa Face ID / Touch ID nativo.
+          <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            O login principal já foi movido para Better Auth com email e senha.
+            A parte biométrica volta depois, já encaixada no fluxo novo.
           </p>
-
-          {faceIdMsg && <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'var(--success-bg)', color: 'var(--success)', fontSize: '12.5px', marginBottom: '12px' }}>{faceIdMsg}</div>}
-          {faceIdError && <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontSize: '12.5px', marginBottom: '12px' }}>{faceIdError}</div>}
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 0', borderBottom: '1px solid var(--border-color)' }}>
-            <div>
-              <h4 style={{ fontSize: '14px', fontWeight: '600' }}>Status do Face ID</h4>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                {passkeyRegistered ? 'Já existe um Face ID cadastrado para este usuário.' : 'Nenhum Face ID cadastrado ainda.'}
-              </p>
-            </div>
-            <span style={{ fontSize: '12px', color: passkeyRegistered ? 'var(--success)' : 'var(--text-muted)', fontWeight: 700 }}>
-              {passkeyRegistered ? 'Ativo' : 'Desativado'}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 0' }}>
-            <div>
-              <h4 style={{ fontSize: '14px', fontWeight: '600' }}>Cadastrar Face ID neste iPhone</h4>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Depois de cadastrar, você poderá tocar em “Entrar com Face ID” na tela de login.
-              </p>
-            </div>
-            <button className="topbar-btn btn-primary" onClick={handleRegisterFaceId} disabled={!faceIdSupported || faceIdBusy}>
-              <Fingerprint size={16} />
-              <span>{faceIdBusy ? 'Cadastrando...' : passkeyRegistered ? 'Recadastrar Face ID' : 'Cadastrar Face ID'}</span>
-            </button>
+          <div style={{ marginTop: '14px', padding: '12px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '12.5px' }}>
+            Face ID: pausado nesta etapa.
           </div>
         </div>
 
