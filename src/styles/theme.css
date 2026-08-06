@@ -1007,3 +1007,485 @@ html.app-locked, body.app-locked {
   position: relative;
   overflow: hidden;
 }
+
+.app-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(16px);
+}
+
+.app-modal {
+  width: min(720px, 100%);
+  max-height: min(88vh, 900px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
+}
+
+.app-modal-header,
+.app-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  border-color: rgba(148, 163, 184, 0.12);
+}
+
+.app-modal-header {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.app-modal-footer {
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  justify-content: flex-end;
+}
+
+.app-modal-body {
+  padding: 20px;
+  overflow: auto;
+}
+
+.app-modal-title {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.settings-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: inherit;
+  outline: none;
+}
+
+.settings-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(207, 213, 223, 0.14);
+}
+
+.module-form-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.module-form-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.module-panel-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.module-panel-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.module-panel-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.module-panel-grid--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.stoic-hero {
+  margin-bottom: 18px;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 18px;
+  align-items: stretch;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.78));
+}
+
+.stoic-hero__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+}
+
+.stoic-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.stoic-hero__copy h2 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.stoic-hero__copy p {
+  max-width: 52ch;
+  color: var(--text-secondary);
+}
+
+.stoic-hero__actions {
+  display: grid;
+  gap: 12px;
+}
+
+.stoic-ritual-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.64);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.stoic-ritual-card:hover {
+  border-color: rgba(207, 213, 223, 0.34);
+  transform: translateY(-1px);
+}
+
+.stoic-ritual-card__icon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgba(207, 213, 223, 0.09);
+  color: var(--accent-primary);
+}
+
+.stoic-ritual-card strong,
+.stoic-journal-card h4,
+.stoic-list-item h4 {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.stoic-ritual-card span,
+.stoic-journal-card p,
+.stoic-list-item span {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.stoic-prompt-banner {
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  text-align: left;
+}
+
+.stoic-prompt-banner h3 {
+  margin: 6px 0 0;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.stoic-breathing {
+  display: grid;
+  gap: 18px;
+  place-items: center;
+  text-align: center;
+}
+
+.stoic-breathing__orb {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle, rgba(207, 213, 223, 0.24), rgba(15, 23, 42, 0.1));
+  border: 1px solid rgba(207, 213, 223, 0.18);
+  box-shadow: inset 0 0 40px rgba(255, 255, 255, 0.06);
+}
+
+.stoic-breathing__orb span {
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.stoic-breathing__orb small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.stoic-breathing__steps,
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.stoic-breathing__steps span,
+.chip {
+  padding: 9px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.chip,
+.mood-chip {
+  cursor: pointer;
+}
+
+.chip.is-active,
+.mood-chip.is-active {
+  border-color: var(--accent-primary);
+  background: var(--accent-light);
+  color: var(--text-primary);
+}
+
+.mood-chip {
+  min-width: 78px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  text-align: center;
+  display: grid;
+  gap: 4px;
+}
+
+.mood-chip span {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.mood-chip small {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: lowercase;
+}
+
+.stoic-insight-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.stoic-insight-card {
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.72);
+  text-align: left;
+}
+
+.stoic-insight-card span,
+.stoic-stat-card span,
+.stoic-list-item span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.stoic-insight-card strong,
+.stoic-stat-value {
+  display: block;
+  margin-top: 6px;
+  font-size: 22px;
+  line-height: 1.1;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.stoic-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 160px;
+}
+
+.stoic-stat-card__head,
+.stoic-journal-card__head,
+.stoic-list-item,
+.stoic-stat-card__body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stoic-stat-card__head span {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.stoic-stat-card__body {
+  align-items: flex-end;
+}
+
+.stoic-list-item {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  align-items: flex-start;
+}
+
+.stoic-list-item--mood {
+  align-items: center;
+}
+
+.stoic-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stoic-pill--accent {
+  background: var(--accent-light);
+  color: var(--text-primary);
+}
+
+.stoic-pill--danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.stoic-pill--success {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.stoic-journal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.stoic-journal-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.stoic-journal-card__foot,
+.stoic-mood-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.stoic-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.72);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.icon-btn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+@media (max-width: 1120px) {
+  .stoic-hero,
+  .module-panel-grid--2,
+  .module-panel-grid--3,
+  .module-panel-grid--4,
+  .stoic-insight-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .stoic-prompt-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 780px) {
+  .module-form-grid--2,
+  .stoic-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .app-modal {
+    border-radius: 18px;
+  }
+
+  .app-modal-body {
+    padding: 16px;
+  }
+
+  .stoic-ritual-card,
+  .stoic-list-item {
+    align-items: flex-start;
+  }
+
+  .mood-chip {
+    min-width: calc(50% - 5px);
+  }
+}
